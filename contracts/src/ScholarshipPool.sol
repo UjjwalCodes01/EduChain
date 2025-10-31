@@ -255,7 +255,7 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
     /**
      * @notice Get applicant address by index
      */
-    function getApplicant(uint256 _index) external view returns (address) {
+    function getApplicant(uint256 _index) external view returns (address){
         require(_index < applicants.length, "Index out of bounds");
         return applicants[_index];
     }
