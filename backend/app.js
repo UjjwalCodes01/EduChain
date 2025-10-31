@@ -9,6 +9,11 @@ const { initEmailTransporter } = require('./utils/email');
 // Import routes
 const applicationRoutes = require('./routes/applicationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const onboardingRoutes = require('./routes/onboardingRoutes');
+const otpRoutes = require('./routes/otpRoutes');
+const userRoutes = require('./routes/userRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 // Initialize Express app
 const app = express();
@@ -36,6 +41,11 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/applications', applicationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/otp', otpRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/auth', authRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -74,10 +84,7 @@ app.use((err, req, res, next) => {
 // Database connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/educhain');
     console.log('✅ MongoDB connected successfully');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);

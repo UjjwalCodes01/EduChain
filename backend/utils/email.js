@@ -4,16 +4,26 @@ const nodemailer = require('nodemailer');
 let transporter;
 
 const initEmailTransporter = () => {
-  transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.warn('⚠️  Email credentials not configured. Email functionality will be disabled.');
+      return null;
     }
-  });
 
-  console.log('Email transporter initialized');
-  return transporter;
+    transporter = nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE || 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    console.log('✅ Email transporter initialized');
+    return transporter;
+  } catch (error) {
+    console.error('❌ Failed to initialize email transporter:', error);
+    return null;
+  }
 };
 
 /**
@@ -26,6 +36,11 @@ const sendVerificationEmail = async (email, token, studentName = 'Student') => {
   try {
     if (!transporter) {
       transporter = initEmailTransporter();
+    }
+
+    if (!transporter) {
+      console.warn('⚠️  Email transporter not available. Skipping email send.');
+      return { success: false, message: 'Email service not configured' };
     }
 
     const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${token}`;
@@ -158,8 +173,91 @@ const sendStatusUpdateEmail = async (email, status, poolName, studentName = 'Stu
   }
 };
 
+/**
+ * Send OTP email for registration verification
+ * @param {String} email - User email address
+ * @param {String} otp - 6-digit OTP code
+ * @param {String} userName - User name (optional)
+ */
+const sendOTPEmail = async (email, otp, userName = 'User') => {
+  try {
+    if (!transporter) {
+      transporter = initEmailTransporter();
+    }
+
+    if (!transporter) {
+      console.warn('⚠️  Email transporter not available. Skipping email send.');
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    const mailOptions = {
+      from: `EduChain <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Your EduChain Verification Code',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .otp-box { background: white; border: 2px dashed #667eea; padding: 20px; text-align: center; margin: 20px 0; border-radius: 10px; }
+            .otp-code { font-size: 36px; font-weight: bold; color: #667eea; letter-spacing: 8px; font-family: 'Courier New', monospace; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🎓 EduChain</h1>
+              <p>Email Verification</p>
+            </div>
+            <div class="content">
+              <h2>Hello ${userName},</h2>
+              <p>Welcome to EduChain! Please use the verification code below to complete your registration:</p>
+              
+              <div class="otp-box">
+                <p style="margin: 0; color: #666; font-size: 14px;">Your Verification Code</p>
+                <div class="otp-code">${otp}</div>
+              </div>
+
+              <div class="warning">
+                <p style="margin: 0;"><strong>⏰ This code will expire in 10 minutes.</strong></p>
+              </div>
+
+              <p><strong>Security Tips:</strong></p>
+              <ul>
+                <li>Never share this code with anyone</li>
+                <li>EduChain will never ask for your code via phone or text</li>
+                <li>If you didn't request this code, please ignore this email</li>
+              </ul>
+
+              <div class="footer">
+                <p>© 2025 EduChain. All rights reserved.</p>
+                <p>Powered by Blockchain Technology</p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`OTP email sent to: ${email}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending OTP email:', error);
+    throw new Error('Failed to send OTP email');
+  }
+};
+
 module.exports = {
   initEmailTransporter,
   sendVerificationEmail,
-  sendStatusUpdateEmail
+  sendStatusUpdateEmail,
+  sendOTPEmail
 };

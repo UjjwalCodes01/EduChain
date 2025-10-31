@@ -1,5 +1,16 @@
 const rateLimit = require('express-rate-limit');
 
+// Helper function to create custom rate limiters
+exports.createLimiter = (max, windowMinutes) => {
+  return rateLimit({
+    windowMs: windowMinutes * 60 * 1000,
+    max: max,
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+};
+
 // General API rate limiter
 exports.apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
