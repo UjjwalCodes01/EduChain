@@ -55,7 +55,10 @@ contract PoolFactoryTest is Test {
         ScholarshipPool pool = ScholarshipPool(payable(poolAddress));
         assertEq(pool.poolName(), poolName1);
         assertEq(pool.scholarshipAmount(), scholarshipAmount1);
-        assertEq(pool.owner(), creator1);
+        
+        // Verify creator has ADMIN_ROLE (AccessControl)
+        bytes32 adminRole = pool.ADMIN_ROLE();
+        assertTrue(pool.hasRole(adminRole, creator1));
     }
 
     function testCreatePoolRevertsWithInvalidParams() public {
@@ -285,16 +288,17 @@ contract PoolFactoryTest is Test {
         ScholarshipPool pool1 = ScholarshipPool(payable(pool1Address));
         ScholarshipPool pool2 = ScholarshipPool(payable(pool2Address));
         
-        // Verify they have different owners
-        assertEq(pool1.owner(), creator1);
-        assertEq(pool2.owner(), creator2);
+        // Verify they have different admins (AccessControl)
+        bytes32 adminRole = pool1.ADMIN_ROLE();
+        assertTrue(pool1.hasRole(adminRole, creator1));
+        assertTrue(pool2.hasRole(adminRole, creator2));
         
         // Verify creator1 can only control pool1
         vm.prank(creator1);
         pool1.pause();
         
         vm.prank(creator2);
-        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", creator2));
+        vm.expectRevert();
         pool1.unpause(); // Should fail because creator2 is not owner of pool1
         
         vm.prank(creator1);

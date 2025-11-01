@@ -1,0 +1,91 @@
+# Kwala Workflow #2: Automated Weekly Payroll
+# This workflow runs every Friday at 5 PM to pay all approved students
+
+Name: "EduChain-Weekly-Scholarship-Payroll"
+Description: "Automatically pay scholarships to all approved students every Friday"
+Execution: "sequential"
+
+Trigger:
+  # Cron-based trigger (time-based, not event-based)
+  RepeatEvery: "0 17 * * 5" # Every Friday at 5:00 PM UTC
+  # Cron format: minute hour day month dayOfWeek
+  # 0 17 * * 5 = 5:00 PM every Friday
+  RecurringChainID: 80001 # Polygon Mumbai (change to 11155111 for Sepolia)
+
+Actions:
+  # Step 1: Call backend to get list of approved but unpaid students
+  - Name: "GetApprovedStudentsList"
+    Type: "api"
+    APIEndpoint: "https://your-backend.render.com/api/kwala/get-approved-students"
+    APIMethod: "POST"
+    APIHeaders:
+      Content-Type: "application/json"
+      Authorization: "Bearer YOUR_KWALA_API_SECRET"
+    APIPayload: |
+      {
+        "poolAddress": "0xYOUR_SCHOLARSHIP_POOL_ADDRESS_HERE",
+        "chainId": 80001
+      }
+    RetriesUntilSuccess: 2
+    # Your backend will:
+    # 1. Connect to blockchain using ethers.js
+    # 2. Query the ScholarshipPool contract
+    # 3. Find all students where: isApproved = true AND isPaid = false
+    # 4. Return: {"students": ["0xAddress1", "0xAddress2", ...]}
+
+  # Step 2: Check if there are students to pay
+  - Name: "CheckIfStudentsExist"
+    Type: "conditional"
+    Condition: "{{GetApprovedStudentsList.students.length}} > 0"
+    # Only continue if there are students to pay
+
+  # Step 3: Batch pay all approved students in one transaction
+  - Name: "BatchPayScholarships"
+    Type: "call"
+    Condition: "{{GetApprovedStudentsList.students.length}} > 0"
+    TargetContract: "0xYOUR_SCHOLARSHIP_POOL_ADDRESS_HERE"
+    TargetContractABI: '[{"inputs":[{"internalType":"address[]","name":"_students","type":"address[]"}],"name":"batchPayScholarships","outputs":[],"stateMutability":"nonpayable","type":"function"}]'
+    TargetFunction: "batchPayScholarships"
+    TargetParams: ["{{GetApprovedStudentsList.students}}"]
+    ChainID: 80001
+    GasLimit: 500000
+    # Note: Gas limit scales with number of students (50k per student approx)
+
+  # Step 4: Notify all students that payment was sent
+  - Name: "NotifyStudentsPayment"
+    Type: "api"
+    Condition: "{{GetApprovedStudentsList.students.length}} > 0"
+    APIEndpoint: "https://your-backend.render.com/api/kwala/notify-payment"
+    APIMethod: "POST"
+    APIHeaders:
+      Content-Type: "application/json"
+      Authorization: "Bearer YOUR_KWALA_API_SECRET"
+    APIPayload: |
+      {
+        "students": "{{GetApprovedStudentsList.students}}",
+        "poolAddress": "0xYOUR_SCHOLARSHIP_POOL_ADDRESS_HERE",
+        "txHash": "{{BatchPayScholarships.transactionHash}}"
+      }
+    RetriesUntilSuccess: 1
+
+  # Step 5: Log the payroll run to your database
+  - Name: "LogPayrollRun"
+    Type: "api"
+    APIEndpoint: "https://your-backend.render.com/api/kwala/log-payroll"
+    APIMethod: "POST"
+    APIHeaders:
+      Content-Type: "application/json"
+      Authorization: "Bearer YOUR_KWALA_API_SECRET"
+    APIPayload: |
+      {
+        "poolAddress": "0xYOUR_SCHOLARSHIP_POOL_ADDRESS_HERE",
+        "studentCount": "{{GetApprovedStudentsList.students.length}}",
+        "success": true,
+        "timestamp": "{{now}}"
+      }
+
+# Notes:
+# - Adjust RepeatEvery to change schedule (e.g., "0 0 1 * *" for monthly on 1st)
+# - Ensure pool has sufficient funds before payroll runs
+# - Monitor gas costs for batch payments (use Mumbai faucet for testing)
+# - Test with small number of students first

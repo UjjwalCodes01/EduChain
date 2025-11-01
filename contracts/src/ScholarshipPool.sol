@@ -3,14 +3,17 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /**
  * @title ScholarshipPool
  * @notice Manages a single scholarship pool with applications, verifications, and payments
- * @dev Each pool is independently managed by its creator (admin/owner)
+ * @dev Uses AccessControl for flexible automation via Kwala
  */
-contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
+contract ScholarshipPool is ReentrancyGuard, Pausable, AccessControl {
+    // --- Role Definitions ---
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant AUTOMATION_ROLE = keccak256("AUTOMATION_ROLE");
     // Pool metadata
     string public poolName;
     string public poolDescription;
@@ -59,7 +62,7 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
         uint256 _scholarshipAmount,
         uint256 _applicationDeadline,
         address _admin
-    ) Ownable(_admin) {
+    ) {
         require(bytes(_poolName).length > 0, "Pool name required");
         require(_scholarshipAmount > 0, "Scholarship amount must be > 0");
         require(_applicationDeadline > block.timestamp, "Deadline must be in future");
@@ -68,6 +71,14 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
         poolDescription = _poolDescription;
         scholarshipAmount = _scholarshipAmount;
         applicationDeadline = _applicationDeadline;
+        
+        // --- Grant Roles ---
+        // The creator is the ADMIN (can withdraw funds, pause, update settings)
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(ADMIN_ROLE, _admin);
+        
+        // The ADMIN can also perform automation tasks manually if needed
+        _grantRole(AUTOMATION_ROLE, _admin);
     }
 
     // Receive donations
@@ -111,9 +122,10 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
 
     /**
      * @notice Admin verifies student application (after email verification)
+     * @dev Can be called by Kwala automation or admin manually
      * @param _student Address of the student
      */
-    function verifyApplication(address _student) external onlyOwner {
+    function verifyApplication(address _student) external onlyRole(AUTOMATION_ROLE) {
         require(applications[_student].studentAddress != address(0), "No application found");
         require(!applications[_student].isVerified, "Already verified");
 
@@ -123,9 +135,10 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
 
     /**
      * @notice Admin approves a verified application
+     * @dev Can be called by Kwala automation or admin manually
      * @param _student Address of the student
      */
-    function approveApplication(address _student) external onlyOwner {
+    function approveApplication(address _student) external onlyRole(AUTOMATION_ROLE) {
         require(applications[_student].isVerified, "Not verified");
         require(!applications[_student].isApproved, "Already approved");
         require(availableFunds >= scholarshipAmount, "Insufficient funds");
@@ -136,9 +149,10 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
 
     /**
      * @notice Admin rejects an application
+     * @dev Can be called by Kwala automation or admin manually
      * @param _student Address of the student
      */
-    function rejectApplication(address _student) external onlyOwner {
+    function rejectApplication(address _student) external onlyRole(AUTOMATION_ROLE) {
         require(applications[_student].studentAddress != address(0), "No application found");
         require(!applications[_student].isApproved, "Already approved");
 
@@ -147,9 +161,10 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
 
     /**
      * @notice Pay scholarship to a single approved student
+     * @dev Can be called by Kwala automation or admin manually
      * @param _student Address of the student
      */
-    function payScholarship(address _student) external onlyOwner nonReentrant {
+    function payScholarship(address _student) external onlyRole(AUTOMATION_ROLE) nonReentrant {
         Application storage app = applications[_student];
         require(app.isApproved, "Not approved");
         require(!app.isPaid, "Already paid");
@@ -167,9 +182,10 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
 
     /**
      * @notice Pay scholarships to multiple approved students in one transaction
+     * @dev Can be called by Kwala automation for batch payments
      * @param _students Array of student addresses
      */
-    function batchPayScholarships(address[] calldata _students) external onlyOwner nonReentrant {
+    function batchPayScholarships(address[] calldata _students) external onlyRole(AUTOMATION_ROLE) nonReentrant {
         uint256 totalAmount = _students.length * scholarshipAmount;
         require(availableFunds >= totalAmount, "Insufficient funds for batch");
 
@@ -192,7 +208,7 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
      * @notice Admin updates the scholarship amount
      * @param _newAmount New scholarship amount in wei
      */
-    function updateScholarshipAmount(uint256 _newAmount) external onlyOwner {
+    function updateScholarshipAmount(uint256 _newAmount) external onlyRole(ADMIN_ROLE) {
         require(_newAmount > 0, "Amount must be > 0");
         scholarshipAmount = _newAmount;
         emit ScholarshipAmountUpdated(_newAmount);
@@ -202,7 +218,7 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
      * @notice Admin updates the application deadline
      * @param _newDeadline New deadline as Unix timestamp
      */
-    function updateDeadline(uint256 _newDeadline) external onlyOwner {
+    function updateDeadline(uint256 _newDeadline) external onlyRole(ADMIN_ROLE) {
         require(_newDeadline > block.timestamp, "Deadline must be in future");
         applicationDeadline = _newDeadline;
         emit DeadlineUpdated(_newDeadline);
@@ -212,7 +228,7 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
      * @notice Admin updates pool description
      * @param _newDescription New description
      */
-    function updatePoolDescription(string memory _newDescription) external onlyOwner {
+    function updatePoolDescription(string memory _newDescription) external onlyRole(ADMIN_ROLE) {
         poolDescription = _newDescription;
         emit PoolDescriptionUpdated(_newDescription);
     }
@@ -221,27 +237,27 @@ contract ScholarshipPool is ReentrancyGuard, Pausable, Ownable {
      * @notice Admin withdraws unused funds
      * @param _amount Amount to withdraw in wei
      */
-    function withdrawFunds(uint256 _amount) external onlyOwner nonReentrant {
+    function withdrawFunds(uint256 _amount) external onlyRole(ADMIN_ROLE) nonReentrant {
         require(_amount <= availableFunds, "Insufficient available funds");
         availableFunds -= _amount;
 
-        (bool success, ) = payable(owner()).call{value: _amount}("");
+        (bool success, ) = payable(msg.sender).call{value: _amount}("");
         require(success, "Withdrawal failed");
 
-        emit FundsWithdrawn(owner(), _amount);
+        emit FundsWithdrawn(msg.sender, _amount);
     }
 
     /**
      * @notice Pause the pool (emergency)
      */
-    function pause() external onlyOwner {
+    function pause() external onlyRole(ADMIN_ROLE) {
         _pause();
     }
 
     /**
      * @notice Unpause the pool
      */
-    function unpause() external onlyOwner {
+    function unpause() external onlyRole(ADMIN_ROLE) {
         _unpause();
     }
 

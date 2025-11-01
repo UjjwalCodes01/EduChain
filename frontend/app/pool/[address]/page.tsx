@@ -18,7 +18,7 @@ interface PoolDetails {
   totalScholarshipsAwarded: number;
   applicantCount: number;
   isPaused: boolean;
-  admin: string;
+  creator: string; // Changed from 'admin' to 'creator' for role-based system
 }
 
 export default function PoolDetailsPage() {
@@ -77,17 +77,19 @@ export default function PoolDetailsPage() {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const contract = new ethers.Contract(poolAddress, POOL_ABI, provider);
 
-        const [name, desc, amount, deadline, balance, awarded, paused, admin, totalApps] = await Promise.all([
+        // Fetch pool data (updated for new ABI)
+        const [name, desc, amount, deadline, totalFunds, availableFunds, awarded, paused] = await Promise.all([
           contract.poolName(),
           contract.poolDescription(),
           contract.scholarshipAmount(),
           contract.applicationDeadline(),
-          contract.balance(),
+          contract.totalFunds(),
+          contract.availableFunds(),
           contract.totalScholarshipsAwarded(),
-          contract.paused(),
-          contract.admin(),
-          contract.totalApplications()
+          contract.paused()
         ]);
+        
+        const applicantCount = await contract.getApplicantCount();
 
         setPool({
           address: poolAddress,
@@ -95,12 +97,12 @@ export default function PoolDetailsPage() {
           poolDescription: desc,
           scholarshipAmount: ethers.formatEther(amount),
           applicationDeadline: Number(deadline),
-          totalFunds: ethers.formatEther(balance),
-          availableFunds: ethers.formatEther(balance),
+          totalFunds: ethers.formatEther(totalFunds),
+          availableFunds: ethers.formatEther(availableFunds),
           totalScholarshipsAwarded: Number(awarded),
-          applicantCount: Number(totalApps),
+          applicantCount: Number(applicantCount),
           isPaused: paused,
-          admin
+          creator: poolAddress // Pool address for now (role-based system)
         });
       } else {
         throw new Error("MetaMask not installed");
@@ -417,8 +419,8 @@ export default function PoolDetailsPage() {
                 <h3 className="text-xl font-bold text-white mb-4">📊 Pool Statistics</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Pool Admin</span>
-                    <span className="text-white font-mono text-sm">{truncateAddress(pool.admin)}</span>
+                    <span className="text-gray-400">Pool Creator</span>
+                    <span className="text-white font-mono text-sm">{truncateAddress(pool.creator)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Total Awarded</span>
