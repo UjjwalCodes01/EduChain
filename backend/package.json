@@ -15,6 +15,7 @@
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "ethers": "^6.15.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
     "ipfs-http-client": "^56.0.3",

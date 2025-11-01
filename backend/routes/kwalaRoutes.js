@@ -103,45 +103,102 @@ router.post('/review-application', verifyKwalaRequest, async (req, res) => {
 // ============================================================================
 router.post('/get-approved-students', verifyKwalaRequest, async (req, res) => {
   try {
-    const { poolAddress, chainId } = req.body;
+    const { poolFactoryAddress, chainId } = req.body;
     
-    console.log(`[Kwala] Fetching approved students for pool ${poolAddress}`);
+    console.log(`[Kwala] Fetching approved students for factory ${poolFactoryAddress}`);
     
     // Connect to blockchain
     const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+    
+    // PoolFactory ABI (minimal - only what we need)
+    const FACTORY_ABI = [
+      "function getAllPools() view returns (address[])",
+      "function getPoolCount() view returns (uint256)"
+    ];
     
     // ScholarshipPool ABI (minimal - only what we need)
     const POOL_ABI = [
       "function getApplicantCount() view returns (uint256)",
       "function applicants(uint256) view returns (address)",
-      "function applications(address) view returns (address studentAddress, string dataHash, bool isVerified, bool isApproved, bool isPaid, uint256 timestamp)"
+      "function applications(address) view returns (address studentAddress, string dataHash, bool isVerified, bool isApproved, bool isPaid, uint256 timestamp)",
+      "function poolName() view returns (string)",
+      "function scholarshipAmount() view returns (uint256)",
+      "function availableFunds() view returns (uint256)"
     ];
     
-    const pool = new ethers.Contract(poolAddress, POOL_ABI, provider);
+    const factory = new ethers.Contract(poolFactoryAddress, FACTORY_ABI, provider);
     
-    // Get all applicants
-    const count = await pool.getApplicantCount();
-    const approvedStudents = [];
+    // Get all pools
+    const allPools = await factory.getAllPools();
+    console.log(`[Kwala] Found ${allPools.length} total pools`);
     
-    console.log(`[Kwala] Checking ${count} total applicants`);
+    if (allPools.length === 0) {
+      return res.json({
+        success: true,
+        poolAddress: null,
+        students: [],
+        count: 0,
+        message: 'No pools found'
+      });
+    }
     
-    for (let i = 0; i < count; i++) {
-      const applicantAddress = await pool.applicants(i);
-      const application = await pool.applications(applicantAddress);
-      
-      // Find students who are approved but not yet paid
-      if (application.isApproved && !application.isPaid) {
-        approvedStudents.push(applicantAddress);
-        console.log(`[Kwala] Found unpaid student: ${applicantAddress}`);
+    // Check each pool for approved but unpaid students
+    for (const poolAddress of allPools) {
+      try {
+        const pool = new ethers.Contract(poolAddress, POOL_ABI, provider);
+        
+        // Get all applicants
+        const count = await pool.getApplicantCount();
+        const approvedStudents = [];
+        
+        console.log(`[Kwala] Checking ${count} applicants in pool ${poolAddress}`);
+        
+        for (let i = 0; i < count; i++) {
+          const applicantAddress = await pool.applicants(i);
+          const application = await pool.applications(applicantAddress);
+          
+          // Find students who are approved but not yet paid
+          if (application.isApproved && !application.isPaid) {
+            approvedStudents.push(applicantAddress);
+            console.log(`[Kwala] Found unpaid student: ${applicantAddress}`);
+          }
+        }
+        
+        // If this pool has unpaid students, return them
+        if (approvedStudents.length > 0) {
+          const poolName = await pool.poolName();
+          const scholarshipAmount = await pool.scholarshipAmount();
+          const availableFunds = await pool.availableFunds();
+          
+          console.log(`[Kwala] Returning ${approvedStudents.length} students from pool: ${poolName}`);
+          
+          return res.json({
+            success: true,
+            poolAddress: poolAddress,
+            poolName: poolName,
+            students: approvedStudents,
+            count: approvedStudents.length,
+            scholarshipAmount: scholarshipAmount.toString(),
+            availableFunds: availableFunds.toString(),
+            timestamp: Date.now()
+          });
+        }
+        
+      } catch (error) {
+        console.error(`[Kwala] Error checking pool ${poolAddress}:`, error.message);
+        continue; // Skip this pool and check next one
       }
     }
     
-    console.log(`[Kwala] Total students to pay: ${approvedStudents.length}`);
+    // No unpaid students found in any pool
+    console.log(`[Kwala] No approved unpaid students found in any pool`);
     
-    return res.json({ 
-      students: approvedStudents,
-      count: approvedStudents.length,
-      poolAddress: poolAddress
+    return res.json({
+      success: true,
+      poolAddress: null,
+      students: [],
+      count: 0,
+      message: 'No approved unpaid students found'
     });
     
   } catch (error) {
@@ -211,8 +268,21 @@ router.post('/notify-payment', verifyKwalaRequest, async (req, res) => {
     
     console.log(`[Kwala] Notifying ${students.length} students of payment`);
     
+    // Connect to blockchain to get pool details
+    const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+    const POOL_ABI = [
+      "function poolName() view returns (string)",
+      "function scholarshipAmount() view returns (uint256)"
+    ];
+    
+    const pool = new ethers.Contract(poolAddress, POOL_ABI, provider);
+    const poolName = await pool.poolName();
+    const scholarshipAmount = await pool.scholarshipAmount();
+    
     const blockExplorer = process.env.BLOCK_EXPLORER_URL || 
-                          'https://mumbai.polygonscan.com';
+                          'https://sepolia.etherscan.io';
+    
+    let successCount = 0;
     
     // Send email to each student
     for (const studentAddress of students) {
@@ -221,31 +291,51 @@ router.post('/notify-payment', verifyKwalaRequest, async (req, res) => {
       });
       
       if (user && user.email) {
-        await sendEmail(
-          user.email,
-          '💰 Scholarship Payment Sent!',
-          `
-          <h2>Great news ${user.fullName || 'Student'}!</h2>
-          <p>Your scholarship payment has been <strong>sent</strong> to your wallet!</p>
-          <p><strong>Your Wallet:</strong> ${studentAddress}</p>
-          <p><strong>Transaction Hash:</strong> ${txHash}</p>
-          <p><a href="${blockExplorer}/tx/${txHash}" target="_blank">
-            View transaction on block explorer →
-          </a></p>
-          <p>The funds should appear in your wallet within a few minutes.</p>
-          <br>
-          <p>Congratulations on your scholarship! 🎓</p>
-          <p>- The EduChain Team</p>
-          `
-        );
-        
-        console.log(`[Kwala] Payment email sent to ${user.email}`);
+        try {
+          await sendEmail(
+            user.email,
+            '💰 Scholarship Payment Sent!',
+            `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #4CAF50;">🎉 Great news ${user.fullName || 'Student'}!</h2>
+              <p>Your scholarship payment has been <strong>sent</strong> to your wallet!</p>
+              
+              <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3>Payment Details:</h3>
+                <p><strong>Pool:</strong> ${poolName}</p>
+                <p><strong>Amount:</strong> ${ethers.formatEther(scholarshipAmount)} ETH</p>
+                <p><strong>Your Wallet:</strong> ${studentAddress}</p>
+                <p><strong>Transaction Hash:</strong> ${txHash}</p>
+                <p><a href="${blockExplorer}/tx/${txHash}" target="_blank" style="color: #4CAF50; text-decoration: none;">
+                  View transaction on block explorer →
+                </a></p>
+              </div>
+              
+              <p>The funds should appear in your wallet within a few minutes.</p>
+              <p>Congratulations on your scholarship! 🎓</p>
+              
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+              <p style="color: #666; font-size: 12px;">
+                This is an automated notification from EduChain Scholarship Platform.
+              </p>
+            </div>
+            `
+          );
+          
+          console.log(`[Kwala] Payment email sent to ${user.email}`);
+          successCount++;
+        } catch (emailError) {
+          console.error(`[Kwala] Failed to send email to ${user.email}:`, emailError.message);
+        }
+      } else {
+        console.log(`[Kwala] No email found for student ${studentAddress}`);
       }
     }
     
     return res.json({ 
       success: true,
-      notifiedCount: students.length 
+      notifiedCount: successCount,
+      totalStudents: students.length
     });
     
   } catch (error) {

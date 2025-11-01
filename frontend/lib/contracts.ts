@@ -1,7 +1,7 @@
 // Contract addresses and ABIs
 // Update these addresses after deploying your contracts to testnet/mainnet
 
-export const POOL_FACTORY_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Update after deployment
+export const POOL_FACTORY_ADDRESS = "0x5D2B277be75CAB114189dE5298F2bC875Fa2a14a"; // Deployed on Sepolia
 
 // ============================================================================
 // FACTORY ABI - PoolFactory.sol
@@ -90,28 +90,8 @@ export const POOL_ABI = [
 // NETWORK CONFIGURATION
 // ============================================================================
 export const NETWORK_CONFIG = {
-  // Update these after deploying to your chosen testnet
-  chainId: 31337, // Change to: 80001 (Mumbai) or 11155111 (Sepolia)
-  chainName: "Localhost",
-  rpcUrl: "http://127.0.0.1:8545", // Change to Mumbai/Sepolia RPC
-  blockExplorer: "http://localhost:8545" // Change to polygonscan/etherscan
-};
-
-// Testnet configurations (uncomment when deploying)
-/*
-// Polygon Mumbai Testnet
-export const NETWORK_CONFIG = {
-  chainId: 80001,
-  chainName: "Polygon Mumbai",
-  rpcUrl: "https://rpc-mumbai.maticvigil.com",
-  blockExplorer: "https://mumbai.polygonscan.com"
-};
-
-// Ethereum Sepolia Testnet
-export const NETWORK_CONFIG = {
-  chainId: 11155111,
+  chainId: 11155111, // Sepolia testnet
   chainName: "Sepolia",
-  rpcUrl: "https://rpc.sepolia.org",
+  rpcUrl: "https://eth-sepolia.g.alchemy.com/v2/Yv-jZwlxmcykNC7GGC0rh",
   blockExplorer: "https://sepolia.etherscan.io"
 };
-*/

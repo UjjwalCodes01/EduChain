@@ -1,81 +1,101 @@
-# Kwala Workflow #1: Automated Application Review
-# This workflow listens for new applications and automatically reviews, verifies, and approves them
+# ============================================================================
+# KWALA Workflow #1: Automated Application Review
+# Listens for ApplicationSubmitted events and automatically reviews/approves
+# ============================================================================
 
 Name: "EduChain-Auto-Review-Applications"
-Description: "Automatically review and approve scholarship applications when students submit"
-Execution: "sequential" # Actions run one after another
+
+Execution:
+  Mode: "sequential"
 
 Trigger:
-  # Listen for ApplicationSubmitted events from your ScholarshipPool contract
-  TriggerChainID: 80001 # Polygon Mumbai testnet (change to 11155111 for Sepolia)
-  TriggerSourceContract: "0xYOUR_SCHOLARSHIP_POOL_ADDRESS_HERE"
+  TriggerChainID: 11155111  # Sepolia Testnet
+  TriggerSourceContract: "0xYOUR_POOL_ADDRESS_HERE"  # Replace with actual pool
   TriggerSourceContractABI: '[{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"student","type":"address"},{"indexed":false,"internalType":"string","name":"dataHash","type":"string"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"ApplicationSubmitted","type":"event"}]'
   TriggerEventName: "ApplicationSubmitted"
-  TriggerEventFilter: "{}" # Listen to all applications (no filtering)
+  TriggerEventFilter: "{}"
+  Meta: "Triggers when student submits scholarship application"
 
 Actions:
-  # Step 1: Call your backend API to review the application
+  # ============================================================================
+  # Action 1: Call Backend API to Review Application
+  # ============================================================================
   - Name: "ReviewApplicationData"
     Type: "api"
-    APIEndpoint: "https://your-backend.render.com/api/kwala/review-application"
-    APIMethod: "POST"
-    APIHeaders:
-      Content-Type: "application/json"
-      Authorization: "Bearer YOUR_KWALA_API_SECRET"
-    APIPayload: |
-      {
-        "studentAddress": "{{Trigger.student}}",
-        "dataHash": "{{Trigger.dataHash}}",
-        "poolAddress": "{{Trigger.address}}"
-      }
+    APIEndpoint: "https://your-backend-url.com/api/kwala/review-application"
+    APIPayload: '{"studentAddress": "{{event.student}}", "dataHash": "{{event.dataHash}}", "poolAddress": "{{contract.address}}"}'
     RetriesUntilSuccess: 3
-    # Your backend will:
-    # 1. Fetch IPFS data using the dataHash
-    # 2. Verify email was confirmed
-    # 3. Check application meets criteria (.edu email, etc.)
-    # 4. Return: {"status": "approved"} or {"status": "rejected"}
+    Metadata: "Fetches IPFS data and validates student eligibility"
 
-  # Step 2: If approved, verify the application on-chain
+  # ============================================================================
+  # Action 2: Verify Application On-Chain (if backend approves)
+  # ============================================================================
   - Name: "VerifyApplicationOnChain"
     Type: "call"
-    Condition: "{{ReviewApplicationData.status}} == 'approved'" # Only if backend approves
-    TargetContract: "0xYOUR_SCHOLARSHIP_POOL_ADDRESS_HERE"
-    TargetContractABI: '[{"inputs":[{"internalType":"address","name":"_student","type":"address"}],"name":"verifyApplication","outputs":[],"stateMutability":"nonpayable","type":"function"}]'
+    TargetContract: "{{contract.address}}"
     TargetFunction: "verifyApplication"
-    TargetParams: ["{{Trigger.student}}"]
-    ChainID: 80001
-    GasLimit: 200000
+    TargetParams: ["{{event.student}}"]
+    EncodedABI: "0x"
+    ChainID: 11155111
+    RetriesUntilSuccess: 2
+    Metadata: "Marks application as email-verified on blockchain"
 
-  # Step 3: Immediately approve the verified application
+  # ============================================================================
+  # Action 3: Approve Application On-Chain
+  # ============================================================================
   - Name: "ApproveApplicationOnChain"
     Type: "call"
-    Condition: "{{ReviewApplicationData.status}} == 'approved'"
-    TargetContract: "0xYOUR_SCHOLARSHIP_POOL_ADDRESS_HERE"
-    TargetContractABI: '[{"inputs":[{"internalType":"address","name":"_student","type":"address"}],"name":"approveApplication","outputs":[],"stateMutability":"nonpayable","type":"function"}]'
+    TargetContract: "{{contract.address}}"
     TargetFunction: "approveApplication"
-    TargetParams: ["{{Trigger.student}}"]
-    ChainID: 80001
-    GasLimit: 150000
+    TargetParams: ["{{event.student}}"]
+    EncodedABI: "0x"
+    ChainID: 11155111
+    RetriesUntilSuccess: 2
+    Metadata: "Approves student for scholarship payment"
 
-  # Step 4: Notify student via email
+  # ============================================================================
+  # Action 4: Send Email Notification to Student
+  # ============================================================================
   - Name: "NotifyStudentApproval"
     Type: "api"
-    Condition: "{{ReviewApplicationData.status}} == 'approved'"
-    APIEndpoint: "https://your-backend.render.com/api/kwala/notify-student"
-    APIMethod: "POST"
-    APIHeaders:
-      Content-Type: "application/json"
-      Authorization: "Bearer YOUR_KWALA_API_SECRET"
-    APIPayload: |
-      {
-        "studentAddress": "{{Trigger.student}}",
-        "status": "approved",
-        "poolAddress": "{{Trigger.address}}"
-      }
+    APIEndpoint: "https://your-backend-url.com/api/kwala/notify-student"
+    APIPayload: '{"studentAddress": "{{event.student}}", "status": "approved", "poolAddress": "{{contract.address}}"}'
     RetriesUntilSuccess: 1
+    Metadata: "Sends approval confirmation email to student"
 
-# Notes:
-# - Replace 0xYOUR_SCHOLARSHIP_POOL_ADDRESS_HERE with actual deployed address
-# - Replace https://your-backend.render.com with your actual backend URL
-# - Create a secure API secret for Kwala to authenticate with your backend
-# - Update ChainID if deploying to Sepolia (11155111) instead of Mumbai (80001)
+# ============================================================================
+# REQUIRED SETUP STEPS:
+# ============================================================================
+# 1. Create a scholarship pool via frontend or factory contract
+#    - Copy the pool address from transaction receipt
+#
+# 2. Get your KWALA wallet address from KWALA dashboard
+#    - Format: KWL-0xYourAddress-CC
+#    - Extract ETH address: 0xYourAddress
+#
+# 3. Grant AUTOMATION_ROLE to KWALA wallet:
+#    cast send POOL_ADDRESS \
+#      "grantRole(bytes32,address)" \
+#      $(cast call POOL_ADDRESS "AUTOMATION_ROLE()(bytes32)" --rpc-url RPC_URL) \
+#      KWALA_ETH_ADDRESS \
+#      --rpc-url https://eth-sepolia.g.alchemy.com/v2/Yv-jZwlxmcykNC7GGC0rh \
+#      --private-key YOUR_PRIVATE_KEY
+#
+# 4. Fund KWALA wallet with Sepolia ETH (for gas fees):
+#    cast send KWALA_ETH_ADDRESS \
+#      --value 0.05ether \
+#      --rpc-url https://eth-sepolia.g.alchemy.com/v2/Yv-jZwlxmcykNC7GGC0rh \
+#      --private-key YOUR_PRIVATE_KEY
+#
+# 5. Purchase KWALA credits via dashboard
+#
+# 6. Deploy backend to public URL (Render/Railway/Ngrok)
+#
+# 7. Update this file:
+#    - Replace "0xYOUR_POOL_ADDRESS_HERE" with actual pool address
+#    - Replace "https://your-backend-url.com" with your backend URL
+#
+# 8. Upload workflow to KWALA dashboard
+#
+# 9. Test by submitting an application via frontend
+# ============================================================================
