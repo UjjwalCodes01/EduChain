@@ -207,19 +207,20 @@ const HomePage = () => {
             
             for (const poolAddress of poolAddresses) {
                 const poolContract = new ethers.Contract(poolAddress, POOL_ABI, provider);
-                
+
                 // Fetch pool data (updated for new ABI)
-                const [name, amount, deadline, totalFunds, availableFunds, awarded] = await Promise.all([
+                const [name, amount, deadline, totalFunds, availableFunds, awarded, admin] = await Promise.all([
                     poolContract.poolName(),
                     poolContract.scholarshipAmount(),
                     poolContract.applicationDeadline(),
                     poolContract.totalFunds(),
                     poolContract.availableFunds(),
-                    poolContract.totalScholarshipsAwarded()
+                    poolContract.totalScholarshipsAwarded(),
+                    poolContract.hasRole(await poolContract.ADMIN_ROLE(), walletAddress) // <-- fetch admin address
                 ]);
-                
+
                 const applicantCount = await poolContract.getApplicantCount();
-                
+
                 poolsData.push({
                     address: poolAddress,
                     poolName: name,
@@ -229,7 +230,7 @@ const HomePage = () => {
                     availableFunds: ethers.formatEther(availableFunds),
                     totalScholarshipsAwarded: Number(awarded),
                     applicantCount: Number(applicantCount),
-                    creator: poolAddress // Pool address is sufficient for display
+                    admin: admin // <-- add admin property
                 });
             }
 
