@@ -18,7 +18,11 @@ const initEmailTransporter = () => {
       }
     });
 
-    console.log('✅ Email transporter initialized');
+    // Verify transporter connectivity and credentials
+    transporter.verify()
+      .then(() => console.log('✅ Email transporter initialized and verified'))
+      .catch((err) => console.error('❌ Email transporter verification failed:', err && err.message ? err.message : err));
+
     return transporter;
   } catch (error) {
     console.error('❌ Failed to initialize email transporter:', error);
