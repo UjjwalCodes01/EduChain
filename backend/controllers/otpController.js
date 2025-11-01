@@ -43,7 +43,9 @@ exports.sendOTP = async (req, res) => {
 
         try {
             // Send OTP email
-            await sendOTPEmail(email, otp);
+            const emailResult = await sendOTPEmail(email, otp);
+            
+            console.log('OTP Email send result:', emailResult);
 
             res.status(200).json({
                 success: true,
@@ -56,10 +58,12 @@ exports.sendOTP = async (req, res) => {
                 }
             });
         } catch (error) {
-            console.error('Error sending OTP:', error);
+            console.error('Error sending OTP email:', error);
+            console.error('Error details:', error.message, error.stack);
             res.status(500).json({
                 success: false,
-                message: 'Failed to send OTP email. Please try again.'
+                message: 'Failed to send OTP email. Please try again.',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
 
