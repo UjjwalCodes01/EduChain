@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import { ethers } from "ethers";
 import { POOL_FACTORY_ADDRESS, FACTORY_ABI, POOL_ABI } from "@/lib/contracts";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface Application {
   _id: string;
@@ -176,7 +177,7 @@ export default function AdminDashboard() {
       const allApplications: Application[] = [];
       
       for (const poolAddr of poolAddresses) {
-        const response = await fetch(`http://localhost:5000/api/applications/pool/${poolAddr}`);
+        const response = await fetch(API_ENDPOINTS.GET_APPLICATIONS_BY_POOL(poolAddr));
         
         if (response.ok) {
           const data = await response.json();
@@ -199,7 +200,7 @@ export default function AdminDashboard() {
 
   const fetchStatistics = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/admin/statistics", {
+      const response = await fetch(API_ENDPOINTS.ADMIN_STATISTICS, {
         headers: {
           "Content-Type": "application/json",
         }
@@ -219,7 +220,7 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       
-      const response = await fetch("http://localhost:5000/api/admin/applications", {
+      const response = await fetch(API_ENDPOINTS.ADMIN_APPLICATIONS, {
         headers: {
           "Content-Type": "application/json",
         }
@@ -263,7 +264,7 @@ export default function AdminDashboard() {
     try {
       const loadingToast = toast.loading("Approving application...");
       
-      const response = await fetch(`http://localhost:5000/api/admin/applications/${applicationId}/approve`, {
+      const response = await fetch(API_ENDPOINTS.APPROVE_APPLICATION(applicationId), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -301,7 +302,7 @@ export default function AdminDashboard() {
     try {
       const loadingToast = toast.loading("Rejecting application...");
       
-      const response = await fetch(`http://localhost:5000/api/admin/applications/${selectedApplication._id}/reject`, {
+      const response = await fetch(API_ENDPOINTS.REJECT_APPLICATION(selectedApplication._id), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -337,7 +338,7 @@ export default function AdminDashboard() {
     try {
       const loadingToast = toast.loading("Marking as paid...");
       
-      const response = await fetch(`http://localhost:5000/api/admin/applications/${applicationId}/paid`, {
+      const response = await fetch(API_ENDPOINTS.MARK_PAID(applicationId), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -366,6 +367,118 @@ export default function AdminDashboard() {
     }
   };
 
+  const payScholarship = async (application: Application) => {
+    try {
+      if (!window.ethereum) {
+        toast.error("Please install MetaMask");
+        return;
+      }
+
+      const loadingToast = toast.loading("Initiating blockchain payment...");
+      
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const poolContract = new ethers.Contract(application.poolAddress, POOL_ABI, signer);
+      
+      // Call payScholarship on the contract
+      const tx = await poolContract.payScholarship(application.applicantWallet);
+      
+      toast.loading("Waiting for transaction confirmation...", { id: loadingToast });
+      await tx.wait();
+      
+      toast.success("Payment sent on blockchain!", { id: loadingToast });
+      
+      // Mark as paid in backend
+      await markAsPaid(application._id);
+      
+    } catch (error: any) {
+      console.error("Error paying scholarship:", error);
+      if (error.code === 'ACTION_REJECTED') {
+        toast.error("Transaction rejected by user");
+      } else {
+        toast.error(error.message || "Failed to send payment");
+      }
+    }
+  };
+
+  const batchPayScholarships = async () => {
+    if (selectedApplications.size === 0) {
+      toast.error("No applications selected");
+      return;
+    }
+    
+    // Filter to only approved, unpaid applications
+    const applicationsToP = filteredApplications.filter(
+      app => selectedApplications.has(app._id) && app.adminApproved && !app.paid
+    );
+    
+    if (applicationsToP.length === 0) {
+      toast.error("No approved unpaid applications selected");
+      return;
+    }
+    
+    // Group by pool address
+    const applicationsByPool = applicationsToP.reduce((acc, app) => {
+      if (!acc[app.poolAddress]) {
+        acc[app.poolAddress] = [];
+      }
+      acc[app.poolAddress].push(app);
+      return acc;
+    }, {} as Record<string, Application[]>);
+    
+    try {
+      if (!window.ethereum) {
+        toast.error("Please install MetaMask");
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      let totalPaid = 0;
+      
+      for (const [poolAddress, apps] of Object.entries(applicationsByPool)) {
+        const loadingToast = toast.loading(`Processing ${apps.length} payment(s) for pool...`);
+        
+        try {
+          const poolContract = new ethers.Contract(poolAddress, POOL_ABI, signer);
+          const recipients = apps.map(app => app.applicantWallet);
+          
+          // Call batchPayScholarships
+          const tx = await poolContract.batchPayScholarships(recipients);
+          
+          toast.loading("Waiting for transaction confirmation...", { id: loadingToast });
+          await tx.wait();
+          
+          toast.success(`${apps.length} payment(s) sent!`, { id: loadingToast });
+          
+          // Mark all as paid in backend
+          for (const app of apps) {
+            await markAsPaid(app._id);
+          }
+          
+          totalPaid += apps.length;
+        } catch (error: any) {
+          console.error(`Error batch paying for pool ${poolAddress}:`, error);
+          toast.error(`Failed to pay for some applications in pool`, { id: loadingToast });
+        }
+      }
+      
+      if (totalPaid > 0) {
+        toast.success(`Successfully paid ${totalPaid} scholarship(s)!`);
+        setSelectedApplications(new Set());
+        
+        // Refresh applications
+        if (myPools.length > 0) {
+          fetchApplications(myPools.map(p => p.address));
+        }
+      }
+    } catch (error: any) {
+      console.error("Error in batch payment:", error);
+      toast.error(error.message || "Failed to process batch payments");
+    }
+  };
+
   const handleBatchApprove = async () => {
     if (selectedApplications.size === 0) {
       toast.error("No applications selected");
@@ -376,7 +489,7 @@ export default function AdminDashboard() {
       setBatchApproving(true);
       const loadingToast = toast.loading(`Approving ${selectedApplications.size} application(s)...`);
       
-      const response = await fetch("http://localhost:5000/api/admin/batch-approve", {
+      const response = await fetch(API_ENDPOINTS.BATCH_APPROVE, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -625,13 +738,21 @@ export default function AdminDashboard() {
                 )}
               </div>
               {selectedApplications.size > 0 && (
-                <button
-                  onClick={handleBatchApprove}
-                  disabled={batchApproving}
-                  className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm font-medium"
-                >
-                  {batchApproving ? "Approving..." : `✓ Approve Selected (${selectedApplications.size})`}
-                </button>
+                <>
+                  <button
+                    onClick={handleBatchApprove}
+                    disabled={batchApproving}
+                    className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm font-medium"
+                  >
+                    {batchApproving ? "Approving..." : `✓ Approve Selected (${selectedApplications.size})`}
+                  </button>
+                  <button
+                    onClick={batchPayScholarships}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                  >
+                    💸 Pay Selected on Blockchain
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -719,12 +840,20 @@ export default function AdminDashboard() {
                       </>
                     )}
                     {application.adminApproved && !application.paid && (
-                      <button
-                        onClick={() => markAsPaid(application._id)}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm"
-                      >
-                        💰 Mark as Paid
-                      </button>
+                      <>
+                        <button
+                          onClick={() => payScholarship(application)}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-semibold"
+                        >
+                          💸 Pay on Blockchain
+                        </button>
+                        <button
+                          onClick={() => markAsPaid(application._id)}
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm"
+                        >
+                          ✓ Mark as Paid
+                        </button>
+                      </>
                     )}
                     {application.documents && (
                       <a

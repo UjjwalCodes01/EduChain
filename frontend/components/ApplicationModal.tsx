@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface ApplicationModalProps {
   pool: {
@@ -45,7 +46,7 @@ export default function ApplicationModal({ pool, walletAddress, onClose }: Appli
     // Check for duplicate application first
     try {
       const checkResponse = await fetch(
-        `http://localhost:5000/api/applications/wallet/${walletAddress}/pool/${pool.address}`
+        API_ENDPOINTS.CHECK_APPLICATION_EXISTS(walletAddress, pool.address)
       );
       
       if (checkResponse.ok) {
@@ -92,7 +93,7 @@ export default function ApplicationModal({ pool, walletAddress, onClose }: Appli
       formDataToSend.append("additionalInfo", formData.additionalInfo);
       formDataToSend.append("document", document);
 
-      const response = await fetch("http://localhost:5000/api/applications/submit", {
+      const response = await fetch(API_ENDPOINTS.SUBMIT_APPLICATION, {
         method: "POST",
         body: formDataToSend,
       });

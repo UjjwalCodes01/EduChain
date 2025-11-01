@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface OTPModalProps {
   email: string;
@@ -37,7 +38,7 @@ export default function OTPModal({ email, walletAddress, onVerified, onCancel }:
       setSending(true);
       const loadingToast = toast.loading("Sending OTP to your email...");
 
-      const response = await fetch("http://localhost:5000/api/otp/send", {
+      const response = await fetch(API_ENDPOINTS.SEND_OTP, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, walletAddress }),
@@ -114,7 +115,7 @@ export default function OTPModal({ email, walletAddress, onVerified, onCancel }:
       setVerifying(true);
       const loadingToast = toast.loading("Verifying OTP...");
 
-      const response = await fetch("http://localhost:5000/api/otp/verify", {
+      const response = await fetch(API_ENDPOINTS.VERIFY_OTP, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, walletAddress, otp: otpString }),

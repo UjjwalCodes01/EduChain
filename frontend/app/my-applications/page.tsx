@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
 import toast, { Toaster } from "react-hot-toast";
 import { Button } from "../../components/ui/stateful-button";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface Application {
   _id: string;
@@ -70,7 +71,7 @@ export default function MyApplicationsPage() {
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/applications/wallet/${walletAddress}`);
+      const response = await fetch(API_ENDPOINTS.GET_APPLICATIONS_BY_WALLET(walletAddress));
       
       if (!response.ok) {
         throw new Error("Failed to fetch applications");
@@ -90,7 +91,7 @@ export default function MyApplicationsPage() {
     try {
       const loadingToast = toast.loading("Resending verification email...");
       
-      const response = await fetch("http://localhost:5000/api/applications/resend-verification", {
+      const response = await fetch(API_ENDPOINTS.RESEND_VERIFICATION, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

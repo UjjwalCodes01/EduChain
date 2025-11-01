@@ -7,6 +7,7 @@ import toast, { Toaster } from "react-hot-toast";
 import Threads from "../../components/Threads";
 import { Button } from "../../components/ui/stateful-button";
 import OTPModal from "../../components/OTPModal";
+import { API_ENDPOINTS } from "@/lib/api";
 
 type Step = "role" | "student" | "provider";
 type UserRole = "student" | "provider" | null;
@@ -63,7 +64,7 @@ export default function DetailsPage() {
       setResendingVerification(true);
       const loadingToast = toast.loading("Resending verification email...");
       
-      const response = await fetch("http://localhost:5000/api/onboarding/resend-verification", {
+      const response = await fetch(API_ENDPOINTS.ONBOARDING_RESEND_VERIFICATION, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -99,7 +100,7 @@ export default function DetailsPage() {
           
           // Check if wallet is already registered
           try {
-            const response = await fetch(`http://localhost:5000/api/auth/check/${wallet}`);
+            const response = await fetch(API_ENDPOINTS.AUTH_CHECK(wallet));
             const data = await response.json();
             
             if (data.registered && data.user) {

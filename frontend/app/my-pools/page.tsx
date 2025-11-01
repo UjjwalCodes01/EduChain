@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
 import toast, { Toaster } from "react-hot-toast";
 import { Button } from "../../components/ui/stateful-button";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface PoolData {
   address: string;
@@ -201,7 +202,7 @@ export default function MyPoolsPage() {
       setLoadingApplications(true);
       setSelectedPool(poolAddress);
 
-      const response = await fetch(`http://localhost:5000/api/applications/pool/${poolAddress}`);
+      const response = await fetch(API_ENDPOINTS.GET_APPLICATIONS_BY_POOL(poolAddress));
       
       if (!response.ok) {
         throw new Error("Failed to fetch applications");

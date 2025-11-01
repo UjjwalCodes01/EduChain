@@ -7,6 +7,7 @@ import Threads from "../../components/Threads";
 import { Button } from "../../components/ui/stateful-button";
 import ApplicationModal from "../../components/ApplicationModal";
 import { POOL_FACTORY_ADDRESS, FACTORY_ABI, POOL_ABI } from "@/lib/contracts";
+import { API_ENDPOINTS } from "@/lib/api";
 
 // Pool interface
 interface Pool {
@@ -112,7 +113,7 @@ const HomePage = () => {
                     // If no localStorage data, check backend
                     if (!storedRole || !storedWallet) {
                         try {
-                            const response = await fetch(`http://localhost:5000/api/auth/check/${walletAddr}`);
+                            const response = await fetch(API_ENDPOINTS.AUTH_CHECK(walletAddr));
                             const data = await response.json();
                             
                             if (data.registered && data.user) {
@@ -146,7 +147,7 @@ const HomePage = () => {
                 
                 // Check if wallet is already registered
                 try {
-                    const response = await fetch(`http://localhost:5000/api/auth/check/${walletAddr}`);
+                    const response = await fetch(API_ENDPOINTS.AUTH_CHECK(walletAddr));
                     const data = await response.json();
                     
                     if (data.registered && data.user) {

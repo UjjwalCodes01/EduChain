@@ -14,7 +14,6 @@ const otpRoutes = require('./routes/otpRoutes');
 const userRoutes = require('./routes/userRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
 const authRoutes = require('./routes/authRoutes');
-const kwalaRoutes = require('./routes/kwalaRoutes');
 
 // Initialize Express app
 const app = express();
@@ -47,7 +46,6 @@ app.use('/api/otp', otpRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/kwala', kwalaRoutes); // Kwala automation endpoints
 
 // 404 handler
 app.use((req, res) => {
