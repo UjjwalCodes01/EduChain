@@ -121,7 +121,7 @@ mongodb+srv://USERNAME:PASSWORD@CLUSTER.xxxxx.mongodb.net/DATABASE?retryWrites=t
 
 **Environment Variables Needed:**
 - `MONGO_URI` - Full MongoDB connection string
-- `FRONTEND_URL` - https://your-app.vercel.app
+- `FRONTEND_URL` - https://edu-chain-zeta.vercel.app/
 - `JWT_SECRET` - Random secure string
 - `EMAIL_USER` - Gmail for sending emails
 - `EMAIL_PASS` - Gmail app password

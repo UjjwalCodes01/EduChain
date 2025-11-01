@@ -46,7 +46,7 @@ vercel --prod
 ### 4. Update CORS (1 min)
 ```bash
 # Back to Render → Add:
-FRONTEND_URL=https://your-app.vercel.app
+FRONTEND_URL=https://edu-chain-zeta.vercel.app/
 ```
 
 ### 5. Test Everything (30 min)
@@ -178,7 +178,7 @@ vercel logs --follow
 ### Backend (Render)
 ```env
 MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/educhain?retryWrites=true&w=majority
-FRONTEND_URL=https://your-app.vercel.app
+FRONTEND_URL=https://edu-chain-zeta.vercel.app/
 JWT_SECRET=your-random-32-char-secret
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-gmail-app-password

@@ -230,7 +230,7 @@ vercel env add NEXT_PUBLIC_NETWORK_NAME
 ### 4. Update Backend CORS
 ```bash
 # On Render dashboard, add:
-FRONTEND_URL=https://your-app.vercel.app
+FRONTEND_URL=https://edu-chain-zeta.vercel.app/
 ```
 
 ### 5. Test Production

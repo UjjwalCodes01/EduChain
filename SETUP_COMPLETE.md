@@ -99,7 +99,7 @@ vercel --prod
 # After Vercel deployment
 # Go back to Render dashboard
 # Add/Update environment variable:
-# FRONTEND_URL = https://your-app.vercel.app
+# FRONTEND_URL = https://edu-chain-zeta.vercel.app/
 ```
 
 #### Step 5: Test Everything (30 minutes)
@@ -165,7 +165,7 @@ Pages:
 ### Backend Environment Variables (Render)
 ```env
 MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/educhain?retryWrites=true&w=majority
-FRONTEND_URL=https://your-app.vercel.app
+FRONTEND_URL=https://edu-chain-zeta.vercel.app/
 JWT_SECRET=your-random-secret-key-min-32-chars
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-gmail-app-password
@@ -344,7 +344,7 @@ Before production deployment:
 
 ### Post-Deployment:
 - [ ] Health check: https://educhain-3.onrender.com/health
-- [ ] Frontend loads: https://your-app.vercel.app
+- [ ] Frontend loads: https://edu-chain-zeta.vercel.app/
 - [ ] MetaMask connection works
 - [ ] Pool data loads from blockchain
 - [ ] Admin dashboard accessible
@@ -468,7 +468,7 @@ cast call <ADDRESS> <FUNCTION> --rpc-url <RPC>
 ## 🤝 Support & Resources
 
 ### Platform URLs:
-- **Frontend**: https://your-app.vercel.app (after deployment)
+- **Frontend**: https://edu-chain-zeta.vercel.app/ (after deployment)
 - **Backend**: https://educhain-3.onrender.com
 - **Factory Contract**: https://sepolia.etherscan.io/address/0x5D2B277be75CAB114189dE5298F2bC875Fa2a14a
 - **Pool Contract**: https://sepolia.etherscan.io/address/0xd5CD1b7D40A1b442954f9873CAb03A5E61d866FE

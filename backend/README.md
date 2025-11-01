@@ -62,7 +62,7 @@ IPFS_PROJECT_SECRET=your_infura_project_secret
 JWT_SECRET=your_jwt_secret_key
 
 # Frontend
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=https://edu-chain-zeta.vercel.app/
 ```
 
 ### 3. Run MongoDB

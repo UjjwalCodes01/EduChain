@@ -70,7 +70,7 @@ cast send 0xd5CD1b7D40A1b442954f9873CAb03A5E61d866FE \
 ### Test 1.1: Provider Registration
 
 1. **Connect Wallet** (Admin)
-   - Open app: https://your-app.vercel.app (or localhost:3000)
+   - Open app: https://edu-chain-zeta.vercel.app/ (or localhost:3000)
    - Click "Connect Wallet"
    - Select MetaMask
    - Approve connection

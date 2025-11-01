@@ -43,7 +43,7 @@ const sendVerificationEmail = async (email, token, studentName = 'Student') => {
       return { success: false, message: 'Email service not configured' };
     }
 
-    const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${token}`;
+  const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${token}`;
     
     const mailOptions = {
       from: `EduChain <${process.env.EMAIL_USER}>`,

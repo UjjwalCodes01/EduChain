@@ -40,7 +40,7 @@ NEXT_PUBLIC_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/Yv-jZwlxmcykNC7GGC0rh
 
 1. Click **"Deploy"**
 2. Wait 2-3 minutes for build to complete
-3. Your app will be live at `https://your-project-name.vercel.app`
+3. Your app will be live at `https://edu-chain-zeta.vercel.app/`
 
 ---
 
@@ -110,7 +110,7 @@ vercel --prod
 On Render dashboard, add environment variable:
 
 ```env
-FRONTEND_URL=https://your-app.vercel.app
+FRONTEND_URL=https://edu-chain-zeta.vercel.app/
 ```
 
 **Replace** `your-app` with your actual Vercel domain.
@@ -318,4 +318,4 @@ vercel inspect
 
 🎉 **Your EduChain frontend is now live on Vercel!**
 
-Production URL: `https://your-project.vercel.app`
+Production URL: `https://edu-chain-zeta.vercel.app/`
