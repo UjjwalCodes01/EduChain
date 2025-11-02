@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
 import toast, { Toaster } from "react-hot-toast";
 import Threads from "../../components/Threads";
+import "../Style.css";
 import { Button } from "../../components/ui/stateful-button";
+import Button2 from "../../components/ui/Button2";
 import ApplicationModal from "../../components/ApplicationModal";
 import { POOL_FACTORY_ADDRESS, FACTORY_ABI, POOL_ABI } from "@/lib/contracts";
 import { API_ENDPOINTS } from "@/lib/api";
@@ -32,13 +34,13 @@ const HomePage = () => {
     const [userRole, setUserRole] = useState<string | null>(null);
     const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
     const [showApplicationModal, setShowApplicationModal] = useState(false);
-    
+
     // Advanced filters
     const [minAmount, setMinAmount] = useState<string>("");
     const [maxAmount, setMaxAmount] = useState<string>("");
     const [sortBy, setSortBy] = useState<string>("newest");
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-    
+
     const router = useRouter();
 
     // Check wallet connection and user role
@@ -62,36 +64,61 @@ const HomePage = () => {
 
         // Search filter
         if (searchQuery) {
-            filtered = filtered.filter(pool =>
-                pool.poolName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                pool.admin.toLowerCase().includes(searchQuery.toLowerCase())
+            filtered = filtered.filter(
+                (pool) =>
+                    pool.poolName
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                    pool.admin.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
 
         // Status filter
         if (filterStatus === "open") {
-            filtered = filtered.filter(pool => pool.applicationDeadline > Date.now() / 1000);
+            filtered = filtered.filter(
+                (pool) => pool.applicationDeadline > Date.now() / 1000
+            );
         } else if (filterStatus === "closed") {
-            filtered = filtered.filter(pool => pool.applicationDeadline <= Date.now() / 1000);
+            filtered = filtered.filter(
+                (pool) => pool.applicationDeadline <= Date.now() / 1000
+            );
         }
 
         // Amount range filter
         if (minAmount) {
-            filtered = filtered.filter(pool => parseFloat(pool.scholarshipAmount) >= parseFloat(minAmount));
+            filtered = filtered.filter(
+                (pool) =>
+                    parseFloat(pool.scholarshipAmount) >= parseFloat(minAmount)
+            );
         }
         if (maxAmount) {
-            filtered = filtered.filter(pool => parseFloat(pool.scholarshipAmount) <= parseFloat(maxAmount));
+            filtered = filtered.filter(
+                (pool) =>
+                    parseFloat(pool.scholarshipAmount) <= parseFloat(maxAmount)
+            );
         }
 
         // Sort
         if (sortBy === "newest") {
-            filtered.sort((a, b) => b.applicationDeadline - a.applicationDeadline);
+            filtered.sort(
+                (a, b) => b.applicationDeadline - a.applicationDeadline
+            );
         } else if (sortBy === "amount-high") {
-            filtered.sort((a, b) => parseFloat(b.scholarshipAmount) - parseFloat(a.scholarshipAmount));
+            filtered.sort(
+                (a, b) =>
+                    parseFloat(b.scholarshipAmount) -
+                    parseFloat(a.scholarshipAmount)
+            );
         } else if (sortBy === "amount-low") {
-            filtered.sort((a, b) => parseFloat(a.scholarshipAmount) - parseFloat(b.scholarshipAmount));
+            filtered.sort(
+                (a, b) =>
+                    parseFloat(a.scholarshipAmount) -
+                    parseFloat(b.scholarshipAmount)
+            );
         } else if (sortBy === "deadline") {
-            filtered.sort((a, b) => a.applicationDeadline - b.applicationDeadline);
+            filtered.sort(
+                (a, b) => a.applicationDeadline - b.applicationDeadline
+            );
         }
 
         setFilteredPools(filtered);
@@ -105,26 +132,40 @@ const HomePage = () => {
                 if (accounts.length > 0) {
                     const walletAddr = accounts[0].address;
                     setWalletAddress(walletAddr);
-                    
+
                     // Check if user data is in localStorage
                     const storedRole = localStorage.getItem("userRole");
                     const storedWallet = localStorage.getItem("userWallet");
-                    
+
                     // If no localStorage data, check backend
                     if (!storedRole || !storedWallet) {
                         try {
-                            const response = await fetch(API_ENDPOINTS.AUTH_CHECK(walletAddr));
+                            const response = await fetch(
+                                API_ENDPOINTS.AUTH_CHECK(walletAddr)
+                            );
                             const data = await response.json();
-                            
+
                             if (data.registered && data.user) {
                                 // Auto-login: Set user data in localStorage
-                                localStorage.setItem("userWallet", data.user.wallet);
-                                localStorage.setItem("userRole", data.user.role);
-                                localStorage.setItem("userEmail", data.user.email);
+                                localStorage.setItem(
+                                    "userWallet",
+                                    data.user.wallet
+                                );
+                                localStorage.setItem(
+                                    "userRole",
+                                    data.user.role
+                                );
+                                localStorage.setItem(
+                                    "userEmail",
+                                    data.user.email
+                                );
                                 setUserRole(data.user.role);
                             }
                         } catch (error) {
-                            console.error("Error checking wallet registration:", error);
+                            console.error(
+                                "Error checking wallet registration:",
+                                error
+                            );
                         }
                     }
                 }
@@ -142,25 +183,33 @@ const HomePage = () => {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const accounts = await provider.send("eth_requestAccounts", []);
                 const walletAddr = accounts[0];
-                
+
                 setWalletAddress(walletAddr);
-                
+
                 // Check if wallet is already registered
                 try {
-                    const response = await fetch(API_ENDPOINTS.AUTH_CHECK(walletAddr));
+                    const response = await fetch(
+                        API_ENDPOINTS.AUTH_CHECK(walletAddr)
+                    );
                     const data = await response.json();
-                    
+
                     if (data.registered && data.user) {
                         // Auto-login: Set user data in localStorage
                         localStorage.setItem("userWallet", data.user.wallet);
                         localStorage.setItem("userRole", data.user.role);
                         localStorage.setItem("userEmail", data.user.email);
-                        
-                        toast.success(`Welcome back! Logged in as ${data.user.role}`, { id: loadingToast });
+
+                        toast.success(
+                            `Welcome back! Logged in as ${data.user.role}`,
+                            { id: loadingToast }
+                        );
                     } else {
                         // New user - needs to complete registration
-                        toast.success("Wallet connected! Please complete your registration.", { id: loadingToast });
-                        
+                        toast.success(
+                            "Wallet connected! Please complete your registration.",
+                            { id: loadingToast }
+                        );
+
                         // Redirect to registration page after a short delay
                         setTimeout(() => {
                             router.push("/details");
@@ -168,7 +217,9 @@ const HomePage = () => {
                     }
                 } catch (error) {
                     console.error("Error checking wallet registration:", error);
-                    toast.success("Wallet connected successfully!", { id: loadingToast });
+                    toast.success("Wallet connected successfully!", {
+                        id: loadingToast,
+                    });
                 }
             } catch (error) {
                 console.error("Error connecting wallet:", error);
@@ -192,7 +243,7 @@ const HomePage = () => {
     const fetchPools = async () => {
         try {
             setLoading(true);
-            
+
             if (!window.ethereum) {
                 toast.error("Please install MetaMask to view pools");
                 setLoading(false);
@@ -200,23 +251,42 @@ const HomePage = () => {
             }
 
             const provider = new ethers.BrowserProvider(window.ethereum);
-            const factory = new ethers.Contract(POOL_FACTORY_ADDRESS, FACTORY_ABI, provider);
+            const factory = new ethers.Contract(
+                POOL_FACTORY_ADDRESS,
+                FACTORY_ABI,
+                provider
+            );
             const poolAddresses = await factory.getAllPools();
-            
+
             const poolsData: Pool[] = [];
-            
+
             for (const poolAddress of poolAddresses) {
-                const poolContract = new ethers.Contract(poolAddress, POOL_ABI, provider);
+                const poolContract = new ethers.Contract(
+                    poolAddress,
+                    POOL_ABI,
+                    provider
+                );
 
                 // Fetch pool data (updated for new ABI)
-                const [name, amount, deadline, totalFunds, availableFunds, awarded, admin] = await Promise.all([
+                const [
+                    name,
+                    amount,
+                    deadline,
+                    totalFunds,
+                    availableFunds,
+                    awarded,
+                    admin,
+                ] = await Promise.all([
                     poolContract.poolName(),
                     poolContract.scholarshipAmount(),
                     poolContract.applicationDeadline(),
                     poolContract.totalFunds(),
                     poolContract.availableFunds(),
                     poolContract.totalScholarshipsAwarded(),
-                    poolContract.hasRole(await poolContract.ADMIN_ROLE(), walletAddress) // <-- fetch admin address
+                    poolContract.hasRole(
+                        await poolContract.ADMIN_ROLE(),
+                        walletAddress
+                    ), // <-- fetch admin address
                 ]);
 
                 const applicantCount = await poolContract.getApplicantCount();
@@ -230,7 +300,7 @@ const HomePage = () => {
                     availableFunds: ethers.formatEther(availableFunds),
                     totalScholarshipsAwarded: Number(awarded),
                     applicantCount: Number(applicantCount),
-                    admin: admin // <-- add admin property
+                    admin: admin, // <-- add admin property
                 });
             }
 
@@ -261,7 +331,7 @@ const HomePage = () => {
         return date.toLocaleDateString("en-US", {
             year: "numeric",
             month: "short",
-            day: "numeric"
+            day: "numeric",
         });
     };
 
@@ -273,28 +343,32 @@ const HomePage = () => {
                 toastOptions={{
                     duration: 3000,
                     style: {
-                        background: '#1f2937',
-                        color: '#fff',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        background: "#1f2937",
+                        color: "#fff",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
                     },
                     success: {
                         iconTheme: {
-                            primary: '#10b981',
-                            secondary: '#fff',
+                            primary: "#10b981",
+                            secondary: "#fff",
                         },
                     },
                     error: {
                         iconTheme: {
-                            primary: '#ef4444',
-                            secondary: '#fff',
+                            primary: "#ef4444",
+                            secondary: "#fff",
                         },
                     },
                 }}
             />
-            
+
             {/* Background Animation */}
             <div className="fixed inset-0 z-0">
-                <Threads amplitude={1.5} distance={0} enableMouseInteraction={false} />
+                <Threads
+                    amplitude={1.5}
+                    distance={0}
+                    enableMouseInteraction={false}
+                />
             </div>
 
             {/* Content */}
@@ -302,8 +376,13 @@ const HomePage = () => {
                 {/* Header */}
                 <header className="px-8 py-6 flex justify-between items-center border-b border-white/10 backdrop-blur-md">
                     <div className="flex items-center gap-2">
-                        <button onClick={() => router.push('/')} className="hover:opacity-80 transition-opacity">
-                            <h1 className="text-2xl font-bold text-white">EduChain</h1>
+                        <button
+                            onClick={() => router.push("/")}
+                            className="hover:opacity-80 transition-opacity"
+                        >
+                            <h1 className="text-2xl font-bold text-white cursor-pointer">
+                                EduChain
+                            </h1>
                         </button>
                     </div>
 
@@ -314,13 +393,17 @@ const HomePage = () => {
                                 {userRole === "provider" ? (
                                     <>
                                         <button
-                                            onClick={() => router.push('/create-pool')}
+                                            onClick={() =>
+                                                router.push("/create-pool")
+                                            }
                                             className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg border border-white/30 text-white transition-all"
                                         >
                                             Create Pool
                                         </button>
                                         <button
-                                            onClick={() => router.push('/my-pools')}
+                                            onClick={() =>
+                                                router.push("/my-pools")
+                                            }
                                             className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg border border-white/30 text-white transition-all"
                                         >
                                             My Pools
@@ -329,37 +412,46 @@ const HomePage = () => {
                                 ) : userRole === "student" ? (
                                     <>
                                         <button
-                                            onClick={() => router.push('/my-applications')}
+                                            onClick={() =>
+                                                router.push("/my-applications")
+                                            }
                                             className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg border border-white/30 text-white transition-all"
                                         >
                                             My Applications
                                         </button>
                                     </>
                                 ) : (
-                                    <button
-                                        onClick={() => router.push('/details')}
-                                        className="px-4 py-2 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 backdrop-blur-md rounded-lg border border-white/30 text-white transition-all font-semibold"
-                                    >
-                                        Complete Registration
-                                    </button>
+                                    // <Button2
+
+                                    // >
+
+                                    <Button2
+                                        onClick={() => router.push("/details")}
+                                        className="scale-85"
+                                        text={"Complete Registration"}
+                                    />
                                 )}
-                                
+
                                 {/* Profile & Transactions Links (Available for all roles) */}
                                 {userRole && (
                                     <>
                                         <button
-                                            onClick={() => router.push('/profile')}
+                                            onClick={() =>
+                                                router.push("/profile")
+                                            }
                                             className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg border border-white/30 text-white transition-all"
                                             title="View Profile"
                                         >
-                                            👤 Profile
+                                            Profile
                                         </button>
                                         <button
-                                            onClick={() => router.push('/transactions')}
+                                            onClick={() =>
+                                                router.push("/transactions")
+                                            }
                                             className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg border border-white/30 text-white transition-all"
                                             title="View Transaction History"
                                         >
-                                            📊 Transactions
+                                            Transactions
                                         </button>
                                     </>
                                 )}
@@ -388,11 +480,17 @@ const HomePage = () => {
                     {!walletAddress ? (
                         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
                             <div className="max-w-md space-y-4">
-                                <h2 className="text-4xl font-bold text-white">Welcome to EduChain</h2>
+                                <h2 className="text-4xl font-bold text-white">
+                                    Welcome to EduChain
+                                </h2>
                                 <p className="text-gray-400 text-lg">
-                                    Connect your wallet to view available scholarship pools and apply for funding.
+                                    Connect your wallet to view available
+                                    scholarship pools and apply for funding.
                                 </p>
-                                <Button onClick={connectWallet} className="mt-6">
+                                <Button
+                                    onClick={connectWallet}
+                                    className="mt-6"
+                                >
                                     Connect Wallet to Continue
                                 </Button>
                             </div>
@@ -402,7 +500,7 @@ const HomePage = () => {
                             {/* Page Title */}
                             <div className="mb-8">
                                 <h1 className="text-4xl font-bold text-white mb-2">
-                                    {userRole === "provider" 
+                                    {userRole === "provider"
                                         ? "Scholarship Pool Management"
                                         : userRole === "student"
                                         ? "Available Scholarship Pools"
@@ -420,11 +518,18 @@ const HomePage = () => {
                             {/* Show registration prompt if no role */}
                             {!userRole && (
                                 <div className="mb-8 p-6 bg-linear-to-r from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-500/30 backdrop-blur-md">
-                                    <h3 className="text-xl font-semibold text-white mb-2">Complete Your Registration</h3>
+                                    <h3 className="text-xl font-semibold text-white mb-2">
+                                        Complete Your Registration
+                                    </h3>
                                     <p className="text-gray-400 mb-4">
-                                        To access all features and apply for scholarships, please complete your registration as a student or scholarship provider.
+                                        To access all features and apply for
+                                        scholarships, please complete your
+                                        registration as a student or scholarship
+                                        provider.
                                     </p>
-                                    <Button onClick={() => router.push('/details')}>
+                                    <Button
+                                        onClick={() => router.push("/details")}
+                                    >
                                         Register Now
                                     </Button>
                                 </div>
@@ -440,7 +545,9 @@ const HomePage = () => {
                                             type="text"
                                             placeholder="Search by pool name or organization..."
                                             value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onChange={(e) =>
+                                                setSearchQuery(e.target.value)
+                                            }
                                             className="w-full px-4 py-3 bg-white/5 backdrop-blur-md rounded-lg border border-white/20 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                         />
                                     </div>
@@ -448,61 +555,135 @@ const HomePage = () => {
                                     {/* Status Filter */}
                                     <select
                                         value={filterStatus}
-                                        onChange={(e) => setFilterStatus(e.target.value)}
-                                        className="px-4 py-3 bg-white/5 backdrop-blur-md rounded-lg border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        onChange={(e) =>
+                                            setFilterStatus(e.target.value)
+                                        }
+                                        className="select w-fit  btn scale-110 cursor-pointer bg-white/5 backdrop-blur-md border-white/20 text-white outline-none focus:ring-2 focus:ring-purple-500 mt-1"
                                     >
-                                        <option value="all">All Pools</option>
-                                        <option value="open">Open</option>
-                                        <option value="closed">Closed</option>
+                                        <option
+                                            className="bg-base-200 text-base-content"
+                                            value="all"
+                                        >
+                                            All Pools
+                                        </option>
+                                        <option
+                                            className="bg-base-200 text-base-content"
+                                            value="open"
+                                        >
+                                            Open
+                                        </option>
+                                        <option
+                                            className="bg-base-200 text-base-content"
+                                            value="closed"
+                                        >
+                                            Closed
+                                        </option>
                                     </select>
 
                                     {/* Sort */}
                                     <select
                                         value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value)}
-                                        className="px-4 py-3 bg-white/5 backdrop-blur-md rounded-lg border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        onChange={(e) =>
+                                            setSortBy(e.target.value)
+                                        }
+                                        className="select w-fit  btn scale-110 cursor-pointer bg-white/5 backdrop-blur-md border-white/20 text-white outline-none focus:ring-2 focus:ring-purple-500 mt-1 ease-in-out transition-all duration-300"
                                     >
-                                        <option value="newest">Newest First</option>
-                                        <option value="deadline">Deadline Soon</option>
-                                        <option value="amount-high">Highest Amount</option>
-                                        <option value="amount-low">Lowest Amount</option>
+                                        <option
+                                            className="bg-base-200 text-base-content"
+                                            value="newest"
+                                        >
+                                            Newest First
+                                        </option>
+                                        <option
+                                            className="bg-base-200 text-base-content"
+                                            value="deadline"
+                                        >
+                                            Deadline Soon
+                                        </option>
+                                        <option
+                                            className="bg-base-200 text-base-content"
+                                            value="amount-high"
+                                        >
+                                            Highest Amount
+                                        </option>
+                                        <option
+                                            className="bg-base-200 text-base-content"
+                                            value="amount-low"
+                                        >
+                                            Lowest Amount
+                                        </option>
                                     </select>
 
                                     {/* Advanced Filters Toggle */}
                                     <button
-                                        onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                        className="px-4 py-3 bg-purple-600 hover:bg-purple-700 backdrop-blur-md rounded-lg border border-purple-500 text-white transition-all whitespace-nowrap"
+                                        onClick={() =>
+                                            setShowAdvancedFilters(
+                                                !showAdvancedFilters
+                                            )
+                                        }
+                                        className="px-4 py-3 bg-purple-600 hover:bg-purple-700 backdrop-blur-md rounded-lg border border-purple-500 text-white transition-all whitespace-nowrap flex gap-2 cursor-pointer"
                                     >
-                                        {showAdvancedFilters ? "Hide" : "Show"} Filters 🔽
+                                        {showAdvancedFilters ? "Hide" : "Show"}{" "}
+                                        Filters{" "}
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            className="lucide lucide-list-filter-icon lucide-list-filter"
+                                        >
+                                            <path d="M2 5h20" />
+                                            <path d="M6 12h12" />
+                                            <path d="M9 19h6" />
+                                        </svg>
                                     </button>
                                 </div>
 
                                 {/* Advanced Filters */}
                                 {showAdvancedFilters && (
                                     <div className="p-6 bg-white/5 backdrop-blur-md rounded-xl border border-white/10 space-y-4">
-                                        <h3 className="text-lg font-semibold text-white mb-4">Advanced Filters</h3>
-                                        
+                                        <h3 className="text-lg font-semibold text-white mb-4">
+                                            Advanced Filters
+                                        </h3>
+
                                         {/* Amount Range */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm text-gray-400 mb-2">Min Amount (ETH)</label>
+                                                <label className="block text-sm text-gray-400 mb-2">
+                                                    Min Amount (ETH)
+                                                </label>
                                                 <input
                                                     type="number"
                                                     step="0.1"
                                                     placeholder="e.g., 0.1"
                                                     value={minAmount}
-                                                    onChange={(e) => setMinAmount(e.target.value)}
+                                                    onChange={(e) =>
+                                                        setMinAmount(
+                                                            e.target.value
+                                                        )
+                                                    }
                                                     className="w-full px-4 py-2 bg-black/50 rounded-lg border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm text-gray-400 mb-2">Max Amount (ETH)</label>
+                                                <label className="block text-sm text-gray-400 mb-2">
+                                                    Max Amount (ETH)
+                                                </label>
                                                 <input
                                                     type="number"
                                                     step="0.1"
                                                     placeholder="e.g., 5.0"
                                                     value={maxAmount}
-                                                    onChange={(e) => setMaxAmount(e.target.value)}
+                                                    onChange={(e) =>
+                                                        setMaxAmount(
+                                                            e.target.value
+                                                        )
+                                                    }
                                                     className="w-full px-4 py-2 bg-black/50 rounded-lg border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                                 />
                                             </div>
@@ -523,9 +704,20 @@ const HomePage = () => {
                                         </button>
 
                                         {/* Active Filters Count */}
-                                        {(searchQuery || filterStatus !== "all" || minAmount || maxAmount) && (
+                                        {(searchQuery ||
+                                            filterStatus !== "all" ||
+                                            minAmount ||
+                                            maxAmount) && (
                                             <div className="text-sm text-purple-400">
-                                                {[searchQuery, filterStatus !== "all", minAmount, maxAmount].filter(Boolean).length} active filter(s)
+                                                {
+                                                    [
+                                                        searchQuery,
+                                                        filterStatus !== "all",
+                                                        minAmount,
+                                                        maxAmount,
+                                                    ].filter(Boolean).length
+                                                }{" "}
+                                                active filter(s)
                                             </div>
                                         )}
                                     </div>
@@ -535,19 +727,39 @@ const HomePage = () => {
                             {/* Stats */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                                 <div className="p-6 bg-white/5 backdrop-blur-md rounded-xl border border-white/10">
-                                    <p className="text-gray-400 text-sm mb-1">Total Pools</p>
-                                    <p className="text-3xl font-bold text-white">{pools.length}</p>
-                                </div>
-                                <div className="p-6 bg-white/5 backdrop-blur-md rounded-xl border border-white/10">
-                                    <p className="text-gray-400 text-sm mb-1">Open Pools</p>
-                                    <p className="text-3xl font-bold text-green-400">
-                                        {pools.filter(p => !isDeadlinePassed(p.applicationDeadline)).length}
+                                    <p className="text-gray-400 text-sm mb-1">
+                                        Total Pools
+                                    </p>
+                                    <p className="text-3xl font-bold text-white">
+                                        {pools.length}
                                     </p>
                                 </div>
                                 <div className="p-6 bg-white/5 backdrop-blur-md rounded-xl border border-white/10">
-                                    <p className="text-gray-400 text-sm mb-1">Total Scholarships Awarded</p>
+                                    <p className="text-gray-400 text-sm mb-1">
+                                        Open Pools
+                                    </p>
+                                    <p className="text-3xl font-bold text-green-400">
+                                        {
+                                            pools.filter(
+                                                (p) =>
+                                                    !isDeadlinePassed(
+                                                        p.applicationDeadline
+                                                    )
+                                            ).length
+                                        }
+                                    </p>
+                                </div>
+                                <div className="p-6 bg-white/5 backdrop-blur-md rounded-xl border border-white/10">
+                                    <p className="text-gray-400 text-sm mb-1">
+                                        Total Scholarships Awarded
+                                    </p>
                                     <p className="text-3xl font-bold text-purple-400">
-                                        {pools.reduce((sum, p) => sum + p.totalScholarshipsAwarded, 0)}
+                                        {pools.reduce(
+                                            (sum, p) =>
+                                                sum +
+                                                p.totalScholarshipsAwarded,
+                                            0
+                                        )}
                                     </p>
                                 </div>
                             </div>
@@ -559,7 +771,9 @@ const HomePage = () => {
                                 </div>
                             ) : filteredPools.length === 0 ? (
                                 <div className="text-center py-12">
-                                    <p className="text-gray-400 text-lg">No pools found matching your criteria.</p>
+                                    <p className="text-gray-400 text-lg">
+                                        No pools found matching your criteria.
+                                    </p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -567,47 +781,75 @@ const HomePage = () => {
                                         <div
                                             key={pool.address}
                                             className="p-6 bg-white/5 backdrop-blur-md rounded-xl border border-white/10 hover:border-purple-500/50 transition-all cursor-pointer"
-                                            onClick={() => router.push(`/pool/${pool.address}`)}
+                                            onClick={() =>
+                                                router.push(
+                                                    `/pool/${pool.address}`
+                                                )
+                                            }
                                         >
                                             {/* Status Badge */}
                                             <div className="flex justify-between items-start mb-4">
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                                        isDeadlinePassed(pool.applicationDeadline)
+                                                        isDeadlinePassed(
+                                                            pool.applicationDeadline
+                                                        )
                                                             ? "bg-red-500/20 text-red-300"
                                                             : "bg-green-500/20 text-green-300"
                                                     }`}
                                                 >
-                                                    {isDeadlinePassed(pool.applicationDeadline) ? "Closed" : "Open"}
+                                                    {isDeadlinePassed(
+                                                        pool.applicationDeadline
+                                                    )
+                                                        ? "Closed"
+                                                        : "Open"}
                                                 </span>
                                             </div>
 
                                             {/* Pool Name */}
-                                            <h3 className="text-xl font-bold text-white mb-2">{pool.poolName}</h3>
+                                            <h3 className="text-xl font-bold text-white mb-2">
+                                                {pool.poolName}
+                                            </h3>
 
                                             {/* Pool Details */}
                                             <div className="space-y-2 mb-4">
                                                 <div className="flex justify-between">
-                                                    <span className="text-gray-400 text-sm">Scholarship Amount:</span>
+                                                    <span className="text-gray-400 text-sm">
+                                                        Scholarship Amount:
+                                                    </span>
                                                     <span className="text-white font-semibold">
-                                                        {formatEther(pool.scholarshipAmount)}
+                                                        {formatEther(
+                                                            pool.scholarshipAmount
+                                                        )}
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-gray-400 text-sm">Deadline:</span>
+                                                    <span className="text-gray-400 text-sm">
+                                                        Deadline:
+                                                    </span>
                                                     <span className="text-white font-semibold">
-                                                        {formatDeadline(pool.applicationDeadline)}
+                                                        {formatDeadline(
+                                                            pool.applicationDeadline
+                                                        )}
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-gray-400 text-sm">Available Funds:</span>
+                                                    <span className="text-gray-400 text-sm">
+                                                        Available Funds:
+                                                    </span>
                                                     <span className="text-purple-400 font-semibold">
-                                                        {formatEther(pool.availableFunds)}
+                                                        {formatEther(
+                                                            pool.availableFunds
+                                                        )}
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-gray-400 text-sm">Applicants:</span>
-                                                    <span className="text-white font-semibold">{pool.applicantCount}</span>
+                                                    <span className="text-gray-400 text-sm">
+                                                        Applicants:
+                                                    </span>
+                                                    <span className="text-white font-semibold">
+                                                        {pool.applicantCount}
+                                                    </span>
                                                 </div>
                                             </div>
 
@@ -615,37 +857,71 @@ const HomePage = () => {
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    if (userRole === "student" && !isDeadlinePassed(pool.applicationDeadline)) {
+                                                    if (
+                                                        userRole ===
+                                                            "student" &&
+                                                        !isDeadlinePassed(
+                                                            pool.applicationDeadline
+                                                        )
+                                                    ) {
                                                         setSelectedPool(pool);
-                                                        setShowApplicationModal(true);
-                                                    } else if (userRole === "provider") {
-                                                        toast.error("Providers cannot apply for scholarships. Only students can apply.");
+                                                        setShowApplicationModal(
+                                                            true
+                                                        );
+                                                    } else if (
+                                                        userRole === "provider"
+                                                    ) {
+                                                        toast.error(
+                                                            "Providers cannot apply for scholarships. Only students can apply."
+                                                        );
                                                     } else if (!userRole) {
-                                                        toast.error("Please register as a student to apply for scholarships.");
-                                                        router.push('/details');
+                                                        toast.error(
+                                                            "Please register as a student to apply for scholarships."
+                                                        );
+                                                        router.push("/details");
                                                     }
                                                 }}
                                                 className={`w-full py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
-                                                    isDeadlinePassed(pool.applicationDeadline)
+                                                    isDeadlinePassed(
+                                                        pool.applicationDeadline
+                                                    )
                                                         ? "bg-gray-500/20 text-gray-400 cursor-not-allowed"
                                                         : userRole === "student"
                                                         ? "bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-                                                        : userRole === "provider"
+                                                        : userRole ===
+                                                          "provider"
                                                         ? "bg-gray-600/50 text-gray-400 cursor-not-allowed"
                                                         : "bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
                                                 }`}
-                                                disabled={isDeadlinePassed(pool.applicationDeadline) || userRole === "provider"}
+                                                disabled={
+                                                    isDeadlinePassed(
+                                                        pool.applicationDeadline
+                                                    ) || userRole === "provider"
+                                                }
                                             >
-                                                {isDeadlinePassed(pool.applicationDeadline) ? (
+                                                {isDeadlinePassed(
+                                                    pool.applicationDeadline
+                                                ) ? (
                                                     "Application Closed"
                                                 ) : userRole === "student" ? (
                                                     "Apply Now"
                                                 ) : userRole === "provider" ? (
                                                     <>
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                        <svg
+                                                            className="w-4 h-4"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                                                            />
                                                         </svg>
-                                                        Provider Account - Cannot Apply
+                                                        Provider Account -
+                                                        Cannot Apply
                                                     </>
                                                 ) : (
                                                     "Register to Apply"
