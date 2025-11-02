@@ -5,18 +5,53 @@ let transporter;
 
 const initEmailTransporter = () => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    // Prefer SendGrid if API key provided (more reliable for hosting providers)
+    if (process.env.SENDGRID_API_KEY) {
+      transporter = nodemailer.createTransport({
+        host: 'smtp.sendgrid.net',
+        port: 587,
+        secure: false,
+        auth: {
+          user: 'apikey',
+          pass: process.env.SENDGRID_API_KEY
+        }
+      });
+      console.log('ℹ️  Using SendGrid SMTP for emails');
+    } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      // Fallback to SMTP (supports Gmail via explicit SMTP settings)
+      const service = process.env.EMAIL_SERVICE || 'gmail';
+
+      if (service === 'gmail') {
+        transporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          },
+          tls: {
+            // allow self-signed certs (useful in some hosting environments)
+            rejectUnauthorized: false
+          },
+          pool: true
+        });
+        console.log('ℹ️  Using Gmail SMTP for emails');
+      } else {
+        // Generic service name (letting nodemailer resolve well-known service)
+        transporter = nodemailer.createTransport({
+          service: service,
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+        console.log(`ℹ️  Using ${service} for emails`);
+      }
+    } else {
       console.warn('⚠️  Email credentials not configured. Email functionality will be disabled.');
       return null;
     }
-
-    transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
 
     // Verify transporter connectivity and credentials
     transporter.verify()
