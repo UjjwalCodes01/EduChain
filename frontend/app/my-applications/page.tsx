@@ -321,7 +321,7 @@ export default function MyApplicationsPage() {
                     </div>
                 ) : filteredApplications.length === 0 ? (
                     <div className="text-center py-12">
-                        <div className="max-w-md mx-auto space-y-4">
+                        <div className="max-w-md mx-auto space-y-4 flex flex-col items-center">
                             <div className="text-6xl">📝</div>
                             <h3 className="text-2xl font-bold text-white">
                                 No Applications Yet
@@ -331,7 +331,7 @@ export default function MyApplicationsPage() {
                                     ? "You haven't applied to any scholarships yet. Browse available pools and apply!"
                                     : `No applications found in the "${filter}" category.`}
                             </p>
-                            <Button onClick={() => router.push("/Home")}>
+                            <Button className="w-3/5" onClick={() => router.push("/Home")}>
                                 Browse Scholarship Pools
                             </Button>
                         </div>
