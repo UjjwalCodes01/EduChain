@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Threads from "../components/Threads";
 import { Button } from "../components/ui/stateful-button";
+import GradientText from "../components/ui/GradientText";
 import { ethers } from "ethers";
 
 export default function Home() {
@@ -86,10 +87,7 @@ export default function Home() {
                             <div className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 text-white">
                                 {truncateAddress(walletAddress)}
                             </div>
-                            <Button
-                                onClick={disconnectWallet}
-                                disabled={false}
-                            >
+                            <Button onClick={disconnectWallet} disabled={false}>
                                 Disconnect
                             </Button>
                         </div>
@@ -104,12 +102,23 @@ export default function Home() {
                 <div className="relative z-2 flex flex-col items-center grow justify-center px-4 text-center">
                     <div className="max-w-4xl mx-auto space-y-6">
                         {/* Main Heading */}
-                        <h1 className="text-6xl md:text-7xl font-bold text-white mb-4 animate-fade-in">
+                        <h1 className="cursor-text select-none text-6xl md:text-7xl font-bold text-white mb-4 animate-fade-in">
                             Decentralized
                             <br />
-                            <span className="bg-linear-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent bg-size-[200%_auto] animate-gradient">
+                            <GradientText
+                                colors={[
+                                    "#40ffaa",
+                                    "#4079ff",
+                                    "#40ffaa",
+                                    "#4079ff",
+                                    "#40ffaa",
+                                ]}
+                                animationSpeed={5}
+                                showBorder={false}
+                                className="custom-class cursor-text"
+                            >
                                 Scholarship Platform
-                            </span>
+                            </GradientText>
                         </h1>
 
                         {/* Subtitle */}
@@ -136,16 +145,16 @@ export default function Home() {
                         </div>
 
                         {/* CTA Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-2 justify-center pt-1">          
-                                <button 
-                                    onClick={() => router.push('/details')}
-                                    className="relative inline-flex h-10 overflow-hidden rounded-full p-px focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
-                                >
-                                    <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
-                                    <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-6 py-1 text-sm font-medium text-white backdrop-blur-3xl">
-                                        Get Started Now
-                                    </span>
-                                </button>
+                        <div className="flex flex-col sm:flex-row gap-2 justify-center pt-1">
+                            <button
+                                onClick={() => router.push("/details")}
+                                className="relative inline-flex h-10 overflow-hidden rounded-full p-px focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
+                            >
+                                <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
+                                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-6 py-1 text-sm font-medium text-white backdrop-blur-3xl">
+                                    Get Started Now
+                                </span>
+                            </button>
                         </div>
                     </div>
                 </div>
