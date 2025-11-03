@@ -242,11 +242,22 @@ const sendOTPEmail = async (email, otp, userName = 'User') => {
       `
     };
 
-    await sgMail.send(msg);
-    console.log(`✅ OTP email sent to: ${email}`);
-    return { success: true };
+    console.log(`📧 Attempting to send OTP email to: ${email}`);
+    console.log(`   From: ${msg.from}`);
+    console.log(`   Subject: ${msg.subject}`);
+    
+    const result = await sgMail.send(msg);
+    console.log(`✅ OTP email sent successfully to: ${email}`);
+    console.log(`   SendGrid response status: ${result && result[0] && result[0].statusCode}`);
+    
+    return { success: true, statusCode: result && result[0] && result[0].statusCode };
   } catch (error) {
     console.error('❌ Error sending OTP email:', error.response ? error.response.body : error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      code: error.code,
+      statusCode: error.response && error.response.statusCode
+    });
     throw new Error('Failed to send OTP email');
   }
 };
