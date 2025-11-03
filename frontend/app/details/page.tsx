@@ -8,7 +8,7 @@ import Threads from "../../components/Threads";
 import { Button } from "../../components/ui/stateful-button";
 import OTPModal from "../../components/OTPModal";
 import Button2 from "../../components/ui/Button2";
-import { API_ENDPOINTS } from "@/lib/api";
+import { API_ENDPOINTS, API_URL } from "@/lib/api";
 
 type Step = "role" | "student" | "provider";
 type UserRole = "student" | "provider" | null;
@@ -180,7 +180,7 @@ export default function DetailsPage() {
             // Check if wallet is already registered
             try {
                 const response = await fetch(
-                    `http://localhost:5000/api/auth/check/${wallet}`
+                    API_ENDPOINTS.AUTH_CHECK(wallet)
                 );
                 const data = await response.json();
 
@@ -279,7 +279,7 @@ export default function DetailsPage() {
 
             // Call backend API
             const res = await fetch(
-                "http://localhost:5000/api/onboarding/student",
+                `${API_URL}/api/onboarding/student`,
                 {
                     method: "POST",
                     body: formData,
@@ -353,7 +353,7 @@ export default function DetailsPage() {
 
             // Call backend API
             const res = await fetch(
-                "http://localhost:5000/api/onboarding/provider",
+                `${API_URL}/api/onboarding/provider`,
                 {
                     method: "POST",
                     body: formData,
