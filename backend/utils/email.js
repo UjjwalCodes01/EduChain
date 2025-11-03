@@ -8,7 +8,16 @@ const initEmailTransporter = () => {
       return null;
     }
 
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    // Trim whitespace and validate API key format
+    const apiKey = process.env.SENDGRID_API_KEY.trim();
+    
+    if (!apiKey.startsWith('SG.')) {
+      console.error('❌ Invalid SENDGRID_API_KEY format. Key should start with "SG."');
+      console.error('   Current key starts with:', apiKey.substring(0, 10));
+      return null;
+    }
+
+    sgMail.setApiKey(apiKey);
     console.log('✅ SendGrid email service initialized');
     return sgMail;
   } catch (error) {
