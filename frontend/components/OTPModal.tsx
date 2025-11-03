@@ -51,11 +51,6 @@ export default function OTPModal({ email, walletAddress, onVerified, onCancel }:
       }
 
       toast.success("OTP sent to your email!", { id: loadingToast });
-      
-      // Show OTP in development mode
-      if (data.data?.otp) {
-        toast.success(`Development Mode - OTP: ${data.data.otp}`, { duration: 10000 });
-      }
 
       setTimeLeft(600); // Reset timer
       setCanResend(false);

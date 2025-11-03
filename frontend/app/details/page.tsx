@@ -370,7 +370,7 @@ export default function DetailsPage() {
     const handleOTPVerified = () => {
         setOTPVerified(true);
         setShowOTPModal(false);
-        toast.success("Email verified! Completing registration...");
+        toast.success("Email verified successfully!");
 
         // Continue with registration based on pending role
         if (pendingRole === "student") {
@@ -378,6 +378,11 @@ export default function DetailsPage() {
         } else if (pendingRole === "provider") {
             submitProvider();
         }
+        
+        // Navigate to Home page after a short delay
+        setTimeout(() => {
+            router.push("/Home");
+        }, 2000);
     };
 
     return (
