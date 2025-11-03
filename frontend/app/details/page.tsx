@@ -378,11 +378,6 @@ export default function DetailsPage() {
         } else if (pendingRole === "provider") {
             submitProvider();
         }
-        
-        // Navigate to Home page after a short delay
-        setTimeout(() => {
-            router.push("/Home");
-        }, 2000);
     };
 
     return (
@@ -492,7 +487,7 @@ export default function DetailsPage() {
                             <p className="text-gray-300 mb-6">
                                 We've sent a verification email to:
                             </p>
-                            <div className="px-4 py-3 bg-white/10 rounded-lg border border-white/20 text-white mb-6 inline-block">
+                            <div className="px-4 py-3 bg-white/10 rounded-lg border flex justify-center border-white/20 text-white mb-6">
                                 {registeredEmail}
                             </div>
 
