@@ -18,7 +18,7 @@ const debugRoutes = require('./routes/debugRoutes');
 
 // Initialize Express app
 const app = express();
-
+app.set('trust proxy', 1);
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'https://edu-chain-zeta.vercel.app/',
