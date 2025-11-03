@@ -52,15 +52,15 @@ router.post('/test-email', async (req, res) => {
 router.get('/email-config', (req, res) => {
     res.json({
         configured: {
+            SENDGRID_API_KEY: !!process.env.SENDGRID_API_KEY,
+            EMAIL_FROM: !!process.env.EMAIL_FROM,
             EMAIL_USER: !!process.env.EMAIL_USER,
-            EMAIL_PASS: !!process.env.EMAIL_PASS,
-            EMAIL_SERVICE: process.env.EMAIL_SERVICE || 'gmail',
-            FRONTEND_URL: process.env.FRONTEND_URL
+            FRONTEND_URL: !!process.env.FRONTEND_URL
         },
         values: {
-            EMAIL_USER: process.env.EMAIL_USER || 'NOT SET',
-            EMAIL_SERVICE: process.env.EMAIL_SERVICE || 'gmail (default)',
-            FRONTEND_URL: process.env.FRONTEND_URL || 'NOT SET'
+            EMAIL_FROM: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'NOT SET',
+            FRONTEND_URL: process.env.FRONTEND_URL || 'NOT SET',
+            SERVICE: process.env.SENDGRID_API_KEY ? 'SendGrid' : 'Not configured'
         }
     });
 });

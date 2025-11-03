@@ -1,69 +1,24 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
-// Create transporter
-let transporter;
-
+// Initialize SendGrid
 const initEmailTransporter = () => {
   try {
-    // Prefer SendGrid if API key provided (more reliable for hosting providers)
-    if (process.env.SENDGRID_API_KEY) {
-      transporter = nodemailer.createTransport({
-        host: 'smtp.sendgrid.net',
-        port: 587,
-        secure: false,
-        auth: {
-          user: 'apikey',
-          pass: process.env.SENDGRID_API_KEY
-        }
-      });
-      console.log('ℹ️  Using SendGrid SMTP for emails');
-    } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      // Fallback to SMTP (supports Gmail via explicit SMTP settings)
-      const service = process.env.EMAIL_SERVICE || 'gmail';
-
-      if (service === 'gmail') {
-        transporter = nodemailer.createTransport({
-          host: 'smtp.gmail.com',
-          port: 587,
-          secure: false,
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-          },
-          tls: {
-            // allow self-signed certs (useful in some hosting environments)
-            rejectUnauthorized: false
-          },
-          pool: true
-        });
-        console.log('ℹ️  Using Gmail SMTP for emails');
-      } else {
-        // Generic service name (letting nodemailer resolve well-known service)
-        transporter = nodemailer.createTransport({
-          service: service,
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-          }
-        });
-        console.log(`ℹ️  Using ${service} for emails`);
-      }
-    } else {
-      console.warn('⚠️  Email credentials not configured. Email functionality will be disabled.');
+    if (!process.env.SENDGRID_API_KEY) {
+      console.warn('⚠️  SENDGRID_API_KEY not configured. Email functionality will be disabled.');
       return null;
     }
 
-    // Verify transporter connectivity and credentials
-    transporter.verify()
-      .then(() => console.log('✅ Email transporter initialized and verified'))
-      .catch((err) => console.error('❌ Email transporter verification failed:', err && err.message ? err.message : err));
-
-    return transporter;
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    console.log('✅ SendGrid email service initialized');
+    return sgMail;
   } catch (error) {
-    console.error('❌ Failed to initialize email transporter:', error);
+    console.error('❌ Failed to initialize SendGrid:', error);
     return null;
   }
 };
+
+// Initialize on module load
+const emailService = initEmailTransporter();
 
 /**
  * Send verification email to student
@@ -73,20 +28,16 @@ const initEmailTransporter = () => {
  */
 const sendVerificationEmail = async (email, token, studentName = 'Student') => {
   try {
-    if (!transporter) {
-      transporter = initEmailTransporter();
-    }
-
-    if (!transporter) {
-      console.warn('⚠️  Email transporter not available. Skipping email send.');
+    if (!emailService) {
+      console.warn('⚠️  Email service not available. Skipping email send.');
       return { success: false, message: 'Email service not configured' };
     }
 
-  const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${token}`;
+    const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${token}`;
     
-    const mailOptions = {
-      from: `EduChain <${process.env.EMAIL_USER}>`,
+    const msg = {
       to: email,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@educhain.app',
       subject: 'Verify Your Email - EduChain Scholarship Application',
       html: `
         <!DOCTYPE html>
@@ -129,11 +80,11 @@ const sendVerificationEmail = async (email, token, studentName = 'Student') => {
       `
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`Verification email sent to: ${email}`);
-    return true;
+    await sgMail.send(msg);
+    console.log(`✅ Verification email sent to: ${email}`);
+    return { success: true };
   } catch (error) {
-    console.error('Error sending verification email:', error);
+    console.error('❌ Error sending verification email:', error.response ? error.response.body : error);
     throw new Error('Failed to send verification email');
   }
 };
@@ -147,8 +98,9 @@ const sendVerificationEmail = async (email, token, studentName = 'Student') => {
  */
 const sendStatusUpdateEmail = async (email, status, poolName, studentName = 'Student') => {
   try {
-    if (!transporter) {
-      transporter = initEmailTransporter();
+    if (!emailService) {
+      console.warn('⚠️  Email service not available. Skipping email send.');
+      return false;
     }
 
     const isApproved = status === 'approved';
@@ -156,9 +108,9 @@ const sendStatusUpdateEmail = async (email, status, poolName, studentName = 'Stu
       ? '🎉 Congratulations! Your Scholarship Application is Approved'
       : 'Scholarship Application Update';
 
-    const mailOptions = {
-      from: `EduChain <${process.env.EMAIL_USER}>`,
+    const msg = {
       to: email,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@educhain.app',
       subject: subject,
       html: `
         <!DOCTYPE html>
@@ -202,11 +154,11 @@ const sendStatusUpdateEmail = async (email, status, poolName, studentName = 'Stu
       `
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`Status update email sent to: ${email}`);
+    await sgMail.send(msg);
+    console.log(`✅ Status update email sent to: ${email}`);
     return true;
   } catch (error) {
-    console.error('Error sending status update email:', error);
+    console.error('❌ Error sending status update email:', error.response ? error.response.body : error);
     // Don't throw - email is not critical for status update
     return false;
   }
@@ -220,18 +172,14 @@ const sendStatusUpdateEmail = async (email, status, poolName, studentName = 'Stu
  */
 const sendOTPEmail = async (email, otp, userName = 'User') => {
   try {
-    if (!transporter) {
-      transporter = initEmailTransporter();
-    }
-
-    if (!transporter) {
-      console.warn('⚠️  Email transporter not available. Skipping email send.');
+    if (!emailService) {
+      console.warn('⚠️  Email service not available. Skipping email send.');
       return { success: false, message: 'Email service not configured' };
     }
 
-    const mailOptions = {
-      from: `EduChain <${process.env.EMAIL_USER}>`,
+    const msg = {
       to: email,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@educhain.app',
       subject: 'Your EduChain Verification Code',
       html: `
         <!DOCTYPE html>
@@ -285,11 +233,11 @@ const sendOTPEmail = async (email, otp, userName = 'User') => {
       `
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`OTP email sent to: ${email}`);
-    return true;
+    await sgMail.send(msg);
+    console.log(`✅ OTP email sent to: ${email}`);
+    return { success: true };
   } catch (error) {
-    console.error('Error sending OTP email:', error);
+    console.error('❌ Error sending OTP email:', error.response ? error.response.body : error);
     throw new Error('Failed to send OTP email');
   }
 };
