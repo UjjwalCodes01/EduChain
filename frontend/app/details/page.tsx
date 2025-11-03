@@ -127,13 +127,16 @@ export default function DetailsPage() {
 
                             // Silent redirect - no error message
                             router.push("/Home");
-                            return; // Keep loading state until redirect
+                            // Keep loading state until redirect completes
+                            return;
                         }
                     } catch (error) {
                         console.error(
                             "Error checking wallet registration:",
                             error
                         );
+                        // Continue to registration page on error
+                        setCheckingWallet(false);
                     }
                 }
             } catch (error) {
@@ -181,17 +184,21 @@ export default function DetailsPage() {
                     setTimeout(() => {
                         router.push("/Home");
                     }, 1000);
-                    return; // Keep loading state until redirect
+                    // Keep loading state until redirect completes
+                    return;
                 }
             } catch (error) {
                 console.error("Error checking wallet registration:", error);
+                // Continue to registration on error
             }
 
+            // Not registered - stop loading and show registration form
             toast.success("Wallet connected!", { id: loadingToast });
         } catch (e) {
             console.error(e);
             toast.error("Failed to connect wallet.");
         } finally {
+            // Only set to false if not redirecting
             setConnecting(false);
             setCheckingWallet(false);
         }
