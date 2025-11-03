@@ -126,9 +126,12 @@ export default function DetailsPage() {
                             localStorage.setItem("userEmail", data.user.email);
 
                             // Silent redirect - no error message
+                            // Keep loading state active until redirect completes
                             router.push("/Home");
-                            // Keep loading state until redirect completes
                             return;
+                        } else {
+                            // Wallet not registered - stop loading and show registration form
+                            setCheckingWallet(false);
                         }
                     } catch (error) {
                         console.error(
@@ -138,12 +141,18 @@ export default function DetailsPage() {
                         // Continue to registration page on error
                         setCheckingWallet(false);
                     }
+                } else {
+                    // No accounts connected
+                    setCheckingWallet(false);
                 }
             } catch (error) {
                 console.error("Error checking wallet:", error);
+                setCheckingWallet(false);
             }
+        } else {
+            // No ethereum provider
+            setCheckingWallet(false);
         }
-        setCheckingWallet(false);
     };
 
     const connectWallet = async () => {
@@ -152,6 +161,9 @@ export default function DetailsPage() {
             window.open("https://metamask.io/download/", "_blank");
             return;
         }
+        
+        let isRedirecting = false;
+        
         try {
             setConnecting(true);
             setCheckingWallet(true);
@@ -181,6 +193,8 @@ export default function DetailsPage() {
                     toast.success("Welcome back! Redirecting to Home...", {
                         id: loadingToast,
                     });
+                    
+                    isRedirecting = true;
                     setTimeout(() => {
                         router.push("/Home");
                     }, 1000);
@@ -199,8 +213,10 @@ export default function DetailsPage() {
             toast.error("Failed to connect wallet.");
         } finally {
             // Only set to false if not redirecting
-            setConnecting(false);
-            setCheckingWallet(false);
+            if (!isRedirecting) {
+                setConnecting(false);
+                setCheckingWallet(false);
+            }
         }
     };
 
@@ -374,16 +390,24 @@ export default function DetailsPage() {
     };
 
     // Handle OTP verification success
-    const handleOTPVerified = () => {
+    const handleOTPVerified = async () => {
         setOTPVerified(true);
         setShowOTPModal(false);
         toast.success("Email verified successfully!");
 
         // Continue with registration based on pending role
         if (pendingRole === "student") {
-            submitStudent();
+            await submitStudent();
+            // Navigate to Home after successful registration
+            setTimeout(() => {
+                router.push("/Home");
+            }, 2000);
         } else if (pendingRole === "provider") {
-            submitProvider();
+            await submitProvider();
+            // Navigate to Home after successful registration
+            setTimeout(() => {
+                router.push("/Home");
+            }, 2000);
         }
     };
 
