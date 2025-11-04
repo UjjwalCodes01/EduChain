@@ -46,13 +46,13 @@ exports.submitApplication = async (req, res) => {
       });
     }
 
-    // Handle file upload if provided
+    // Handle file upload if provided (uses mock CID if IPFS fails)
     let ipfsHash = '';
     if (req.file) {
       ipfsHash = await uploadToIPFS(req.file.buffer, req.file.originalname);
     }
 
-    // Upload application metadata to IPFS
+    // Upload application metadata to IPFS (uses mock CID if IPFS fails)
     const metadata = {
       ...applicationData,
       timestamp: new Date().toISOString(),
