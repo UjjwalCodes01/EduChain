@@ -30,6 +30,12 @@ app.use(express.urlencoded({ extended: true }));
 // Apply general rate limiter to all routes
 app.use(apiLimiter);
 
+// Request logger middleware (before routes)
+app.use((req, res, next) => {
+  console.log(`📍 ${req.method} ${req.path}`);
+  next();
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
@@ -51,9 +57,12 @@ app.use('/api/debug', debugRoutes);
 
 // 404 handler
 app.use((req, res) => {
+  console.log(`❌ 404 - Route not found: ${req.method} ${req.path}`);
   res.status(404).json({
     success: false,
-    error: 'Route not found'
+    error: 'Route not found',
+    path: req.path,
+    method: req.method
   });
 });
 
