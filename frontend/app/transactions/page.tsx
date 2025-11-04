@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface Transaction {
   id: string;
@@ -103,7 +104,7 @@ export default function TransactionsPage() {
       setLoading(true);
       
       // Fetch transactions from API
-      const response = await fetch(`http://localhost:5000/api/transactions/wallet/${wallet}`);
+      const response = await fetch(API_ENDPOINTS.GET_TRANSACTIONS_BY_WALLET(wallet));
       
       if (response.ok) {
         const data = await response.json();
