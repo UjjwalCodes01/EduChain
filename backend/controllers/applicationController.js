@@ -8,28 +8,63 @@ const crypto = require('crypto');
  */
 exports.submitApplication = async (req, res) => {
   try {
+    console.log('📥 Received application submission:', {
+      body: req.body,
+      file: req.file ? { name: req.file.originalname, size: req.file.size } : 'No file'
+    });
+
     const {
       walletAddress,
       email,
       poolId,
       poolAddress,
-      applicationData
+      applicationData,
+      // Also accept flat fields from frontend
+      name,
+      studentId,
+      institution,
+      program,
+      year,
+      gpa,
+      additionalInfo
     } = req.body;
+
+    // Build applicationData from either nested object or flat fields
+    const appData = applicationData || {
+      name,
+      studentId,
+      institution,
+      program,
+      year,
+      gpa,
+      additionalInfo
+    };
 
     // Validate required fields
     if (!walletAddress || !email || !poolId || !poolAddress) {
+      console.error('❌ Missing required fields:', { walletAddress, email, poolId, poolAddress });
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields'
+        error: 'Missing required fields: walletAddress, email, poolId, poolAddress'
       });
     }
 
     // Validate email format (basic check for college emails)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      console.error('❌ Invalid email format:', email);
       return res.status(400).json({
         success: false,
         error: 'Invalid email format'
+      });
+    }
+
+    // Validate that we have application data
+    if (!appData.name || !appData.institution || !appData.program) {
+      console.error('❌ Missing application data fields');
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required application fields: name, institution, program'
       });
     }
 
@@ -40,6 +75,7 @@ exports.submitApplication = async (req, res) => {
     });
 
     if (existingApplication) {
+      console.warn('⚠️  Duplicate application detected:', { walletAddress, poolAddress });
       return res.status(400).json({
         success: false,
         error: 'You have already applied to this scholarship pool'
@@ -49,16 +85,22 @@ exports.submitApplication = async (req, res) => {
     // Handle file upload if provided (uses mock CID if IPFS fails)
     let ipfsHash = '';
     if (req.file) {
+      console.log('📄 Uploading document to IPFS...');
       ipfsHash = await uploadToIPFS(req.file.buffer, req.file.originalname);
+      console.log('✅ Document uploaded, CID:', ipfsHash);
+    } else {
+      console.warn('⚠️  No document provided');
     }
 
     // Upload application metadata to IPFS (uses mock CID if IPFS fails)
     const metadata = {
-      ...applicationData,
+      ...appData,
       timestamp: new Date().toISOString(),
       ipfsDocumentHash: ipfsHash
     };
+    console.log('📤 Uploading metadata to IPFS...');
     const metadataHash = await uploadJSONToIPFS(metadata);
+    console.log('✅ Metadata uploaded, CID:', metadataHash);
 
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
@@ -70,26 +112,29 @@ exports.submitApplication = async (req, res) => {
       poolId,
       poolAddress: poolAddress.toLowerCase(),
       ipfsHash: metadataHash,
-      applicationData,
+      applicationData: appData,
       verificationToken,
       emailVerified: false,
       status: 'pending'
     });
 
     await application.save();
+    console.log('✅ Application saved to database:', application._id);
 
     // Send verification email
     try {
       await sendVerificationEmail(
         email,
         verificationToken,
-        applicationData?.name || 'Student'
+        appData?.name || 'Student'
       );
+      console.log('✅ Verification email sent to:', email);
     } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+      console.error('❌ Failed to send verification email:', emailError);
       // Continue even if email fails
     }
 
+    console.log('✅ Application submitted successfully');
     res.status(201).json({
       success: true,
       message: 'Application submitted successfully. Please check your email to verify.',
@@ -101,7 +146,7 @@ exports.submitApplication = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error submitting application:', error);
+    console.error('❌ Error submitting application:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to submit application',
