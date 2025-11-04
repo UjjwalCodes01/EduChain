@@ -6,10 +6,13 @@ const crypto = require('crypto');
 // Register Student
 exports.registerStudent = async (req, res) => {
     try {
+        console.log('📍 POST /api/onboarding/student - Starting registration');
         const { wallet, fullName, email, institute, program, graduationYear } = req.body;
+        console.log('📝 Registration data:', { wallet, fullName, email, institute, program, graduationYear });
 
         // Validate required fields
         if (!wallet || !fullName || !email || !institute || !program || !graduationYear) {
+            console.log('❌ Missing required fields');
             return res.status(400).json({
                 success: false,
                 message: 'All required fields must be provided'
@@ -18,6 +21,7 @@ exports.registerStudent = async (req, res) => {
 
         // Normalize wallet address
         const walletAddress = wallet.toLowerCase();
+        console.log('🔄 Normalized wallet address:', walletAddress);
 
         // Check if user already exists
         const existingUser = await User.findOne({ walletAddress });
@@ -70,15 +74,23 @@ exports.registerStudent = async (req, res) => {
         });
 
         await newUser.save();
+        console.log('✅ Student user saved to database:', {
+            id: newUser._id,
+            walletAddress: newUser.walletAddress,
+            role: newUser.role,
+            email: newUser.email
+        });
 
         // Send verification email
         try {
             await sendVerificationEmail(email, verificationToken);
+            console.log('📧 Verification email sent to:', email);
         } catch (error) {
             console.error('Email sending error:', error);
             // Continue even if email fails
         }
 
+        console.log('🎉 Student registration completed successfully');
         res.status(201).json({
             success: true,
             message: 'Student registration successful. Please check your email to verify your account.',
@@ -103,10 +115,13 @@ exports.registerStudent = async (req, res) => {
 // Register Provider
 exports.registerProvider = async (req, res) => {
     try {
+        console.log('📍 POST /api/onboarding/provider - Starting registration');
         const { wallet, organizationName, email, website, description, contactPerson } = req.body;
+        console.log('📝 Provider registration data:', { wallet, organizationName, email, website, description, contactPerson });
 
         // Validate required fields
         if (!wallet || !organizationName || !email || !description || !contactPerson) {
+            console.log('❌ Missing required fields for provider');
             return res.status(400).json({
                 success: false,
                 message: 'All required fields must be provided'
@@ -115,6 +130,7 @@ exports.registerProvider = async (req, res) => {
 
         // Normalize wallet address
         const walletAddress = wallet.toLowerCase();
+        console.log('🔄 Normalized wallet address:', walletAddress);
 
         // Check if user already exists
         const existingUser = await User.findOne({ walletAddress });
@@ -168,15 +184,23 @@ exports.registerProvider = async (req, res) => {
         });
 
         await newUser.save();
+        console.log('✅ Provider user saved to database:', {
+            id: newUser._id,
+            walletAddress: newUser.walletAddress,
+            role: newUser.role,
+            email: newUser.email
+        });
 
         // Send verification email
         try {
             await sendVerificationEmail(email, verificationToken);
+            console.log('📧 Verification email sent to:', email);
         } catch (error) {
             console.error('Email sending error:', error);
             // Continue even if email fails
         }
 
+        console.log('🎉 Provider registration completed successfully');
         res.status(201).json({
             success: true,
             message: 'Provider registration successful. Please check your email to verify your account.',
