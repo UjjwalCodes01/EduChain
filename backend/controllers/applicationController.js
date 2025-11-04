@@ -202,7 +202,7 @@ exports.verifyEmail = async (req, res) => {
 };
 
 /**
- * Get application by wallet and pool
+ * Get application by wallet and pool (for checking if application exists)
  */
 exports.getApplication = async (req, res) => {
   try {
@@ -214,14 +214,15 @@ exports.getApplication = async (req, res) => {
     });
 
     if (!application) {
-      return res.status(404).json({
-        success: false,
-        error: 'Application not found'
+      return res.json({
+        success: true,
+        exists: false
       });
     }
 
     res.json({
       success: true,
+      exists: true,
       data: application
     });
 
