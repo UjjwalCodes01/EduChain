@@ -231,6 +231,12 @@ export default function DetailsPage() {
     };
 
     const onChooseRole = (role: "student" | "provider") => {
+        // Clear any previous registration state when switching roles
+        setOTPVerified(false);
+        setPendingRole(null);
+        setPendingEmail("");
+        setShowOTPModal(false);
+        console.log(`Switching to ${role} registration - cleared previous state`);
         setStep(role);
     };
 
@@ -261,10 +267,13 @@ export default function DetailsPage() {
             return;
         }
 
+        // Reset any previous OTP state to ensure clean registration
+        setOTPVerified(false);
+        setPendingRole("student");
+        setPendingEmail(studentForm.email);
+
         // Check if OTP is verified
         if (!otpVerified) {
-            setPendingEmail(studentForm.email);
-            setPendingRole("student");
             setShowOTPModal(true);
             return;
         }
@@ -305,6 +314,7 @@ export default function DetailsPage() {
             localStorage.setItem("userRole", "student");
             localStorage.setItem("userWallet", walletAddress);
             localStorage.setItem("userEmail", studentForm.email);
+            console.log('Student registration: localStorage set to student');
 
             toast.success(
                 "Registration successful! Redirecting to Home...",
@@ -339,10 +349,13 @@ export default function DetailsPage() {
             return;
         }
 
+        // Reset any previous OTP state to ensure clean registration
+        setOTPVerified(false);
+        setPendingRole("provider");
+        setPendingEmail(providerForm.email);
+
         // Check if OTP is verified
         if (!otpVerified) {
-            setPendingEmail(providerForm.email);
-            setPendingRole("provider");
             setShowOTPModal(true);
             return;
         }
@@ -384,6 +397,7 @@ export default function DetailsPage() {
             localStorage.setItem("userRole", "provider");
             localStorage.setItem("userWallet", walletAddress);
             localStorage.setItem("userEmail", providerForm.email);
+            console.log('Provider registration: localStorage set to provider');
 
             toast.success(
                 "Provider registration successful! Redirecting to Home...",

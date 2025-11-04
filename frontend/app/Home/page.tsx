@@ -160,6 +160,14 @@ const HomePage = () => {
                                     data.user.email
                                 );
                                 setUserRole(data.user.role);
+                                console.log('Home: Auto-login successful, role:', data.user.role);
+                            } else {
+                                // User not found in backend, clear localStorage
+                                localStorage.removeItem("userRole");
+                                localStorage.removeItem("userWallet");
+                                localStorage.removeItem("userEmail");
+                                setUserRole(null);
+                                console.log('Home: User not found in backend, cleared localStorage');
                             }
                         } catch (error) {
                             console.error(
