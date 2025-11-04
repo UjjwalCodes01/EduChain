@@ -423,13 +423,112 @@ export default function DetailsPage() {
         toast.success("Email verified successfully!");
 
         // Continue with registration based on pending role
-        if (pendingRole === "student") {
-            await submitStudent();
-        } else if (pendingRole === "provider") {
-            await submitProvider();
+        // We need to manually call the registration since state updates are async
+        try {
+            if (pendingRole === "student") {
+                setStudentSubmitting(true);
+                const loadingToast = toast.loading("Submitting registration...");
+
+                const formData = new FormData();
+                formData.append("wallet", walletAddress);
+                formData.append("fullName", studentForm.fullName);
+                formData.append("email", studentForm.email);
+                formData.append("institute", studentForm.institute);
+                formData.append("program", studentForm.program);
+                formData.append("graduationYear", studentForm.graduationYear);
+                if (studentDoc) formData.append("document", studentDoc);
+
+                const res = await fetch(
+                    `${API_URL}/api/onboarding/student`,
+                    {
+                        method: "POST",
+                        body: formData,
+                    }
+                );
+
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(
+                        errorData.message || "Failed to submit student registration"
+                    );
+                }
+
+                const responseData = await res.json();
+                console.log('Student registration response:', responseData);
+
+                // Store user role in localStorage
+                localStorage.setItem("userRole", "student");
+                localStorage.setItem("userWallet", walletAddress);
+                localStorage.setItem("userEmail", studentForm.email);
+                console.log('Student registration: localStorage set to student');
+
+                toast.success(
+                    "Registration successful! Redirecting to Home...",
+                    { id: loadingToast }
+                );
+
+                // Redirect to Home after a short delay
+                setTimeout(() => {
+                    router.push("/Home");
+                }, 2000);
+                setStudentSubmitting(false);
+            } else if (pendingRole === "provider") {
+                setProviderSubmitting(true);
+                const loadingToast = toast.loading("Submitting registration...");
+
+                const formData = new FormData();
+                formData.append("wallet", walletAddress);
+                formData.append("organizationName", providerForm.organizationName);
+                formData.append("email", providerForm.email);
+                formData.append("website", providerForm.website);
+                formData.append("description", providerForm.description);
+                formData.append("contactPerson", providerForm.contactPerson);
+                if (providerDoc) formData.append("document", providerDoc);
+
+                const res = await fetch(
+                    `${API_URL}/api/onboarding/provider`,
+                    {
+                        method: "POST",
+                        body: formData,
+                    }
+                );
+
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(
+                        errorData.message || "Failed to submit provider registration"
+                    );
+                }
+
+                const responseData = await res.json();
+                console.log('Provider registration response:', responseData);
+
+                // Store user role in localStorage
+                localStorage.setItem("userRole", "provider");
+                localStorage.setItem("userWallet", walletAddress);
+                localStorage.setItem("userEmail", providerForm.email);
+                console.log('Provider registration: localStorage set to provider');
+
+                toast.success(
+                    "Provider registration successful! Redirecting to Home...",
+                    { id: loadingToast }
+                );
+
+                // Redirect to Home after a short delay
+                setTimeout(() => {
+                    router.push("/Home");
+                }, 2000);
+                setProviderSubmitting(false);
+            }
+        } catch (e: any) {
+            console.error('Registration after OTP error:', e);
+            toast.error(e.message || "Registration failed. Please try again.");
+            if (pendingRole === "student") {
+                setStudentSubmitting(false);
+            } else {
+                setProviderSubmitting(false);
+            }
         }
-        // Navigate to Home page after registration
-        router.push("/Home");
     };
 
     return (
