@@ -3,6 +3,7 @@ const FormData = require('form-data');
 
 const PINATA_API_KEY = process.env.PINATA_API_KEY;
 const PINATA_API_SECRET = process.env.PINATA_API_SECRET;
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const pinataBaseUrl = 'https://api.pinata.cloud/pinning';
 
 /**
