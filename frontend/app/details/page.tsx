@@ -414,6 +414,8 @@ export default function DetailsPage() {
         } else if (pendingRole === "provider") {
             await submitProvider();
         }
+        // Navigate to Home page after registration
+        router.push("/Home");
     };
 
     return (

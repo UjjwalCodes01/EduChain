@@ -36,6 +36,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Root route for friendly message
+app.get('/', (req, res) => {
+  res.send('🎓 EduChain Backend API is running! Use /api/* endpoints.');
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
