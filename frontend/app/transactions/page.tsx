@@ -80,44 +80,24 @@ export default function TransactionsPage() {
       setLoading(true);
       
       // Fetch transactions from API
-      const response = await fetch(`http://localhost:5000/api/transactions/wallet/${wallet}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setTransactions(data.transactions);
-        setFilteredTransactions(data.transactions);
-      } else {
-        console.error("Failed to fetch transactions");
-        setTransactions([]);
-        setFilteredTransactions([]);
-      }
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-      toast.error("Failed to load transaction history");
-      setTransactions([]);
-      setFilteredTransactions([]);
-    } finally {
-      setLoading(false);
-    }
-  const fetchTransactions = async (wallet: string, role: string) => {
-    try {
-      setLoading(true);
-      
-      // Fetch transactions from API
       const response = await fetch(API_ENDPOINTS.GET_TRANSACTIONS_BY_WALLET(wallet));
       
       if (response.ok) {
         const data = await response.json();
-        setTransactions(data.transactions);
-        setFilteredTransactions(data.transactions);
+        setTransactions(data.transactions || []);
+        setFilteredTransactions(data.transactions || []);
+      } else if (response.status === 404) {
+        // No transactions found
+        setTransactions([]);
+        setFilteredTransactions([]);
       } else {
         console.error("Failed to fetch transactions");
         setTransactions([]);
         setFilteredTransactions([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching transactions:", error);
-      toast.error("Failed to load transaction history");
+      toast.error(error.message || "Failed to load transaction history. Please check your connection.");
       setTransactions([]);
       setFilteredTransactions([]);
     } finally {

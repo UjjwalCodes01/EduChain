@@ -80,22 +80,27 @@ export default function ProfilePage() {
           institution: data.profile.institution || "",
           organizationName: data.profile.organizationName || "",
         });
+        
+        // Fetch notification preferences
+        const prefsResponse = await fetch(API_ENDPOINTS.GET_USER_PREFERENCES(wallet));
+        if (prefsResponse.ok) {
+          const prefsData = await prefsResponse.json();
+          setEmailNotifications(prefsData.preferences.emailNotifications);
+          setApplicationUpdates(prefsData.preferences.applicationUpdates);
+          setWeeklyDigest(prefsData.preferences.weeklyDigest);
+        }
+      } else if (response.status === 404) {
+        // User not found - redirect to registration
+        toast.error("Profile not found. Please complete registration first.");
+        setTimeout(() => router.push("/details"), 2000);
       } else {
-        // If user not found, show error
-        throw new Error("Profile not found. Please complete registration first.");
+        throw new Error("Failed to load profile");
       }
-      
-      // Fetch notification preferences
-      const prefsResponse = await fetch(API_ENDPOINTS.GET_USER_PREFERENCES(wallet));
-      if (prefsResponse.ok) {
-        const prefsData = await prefsResponse.json();
-        setEmailNotifications(prefsData.preferences.emailNotifications);
-        setApplicationUpdates(prefsData.preferences.applicationUpdates);
-        setWeeklyDigest(prefsData.preferences.weeklyDigest);
-      }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching profile:", error);
-      toast.error("Failed to load profile");
+      toast.error(error.message || "Failed to load profile. Please check your connection.");
+      // Redirect to home if profile fetch fails
+      setTimeout(() => router.push("/Home"), 2000);
     } finally {
       setLoading(false);
     }
