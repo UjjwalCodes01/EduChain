@@ -119,18 +119,23 @@ export default function OTPModal({ email, walletAddress, onVerified, onCancel }:
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Invalid OTP");
+        toast.error(data.message || "Invalid OTP. Please try again.", { id: loadingToast });
+        // Clear OTP inputs on error
+        setOtp(["", "", "", "", "", ""]);
+        inputRefs.current[0]?.focus();
+        setVerifying(false);
+        return; // Don't call onVerified if OTP is wrong
       }
 
       toast.success("OTP verified successfully!", { id: loadingToast });
-      onVerified();
+      setVerifying(false);
+      onVerified(); // Only call onVerified if OTP is correct
     } catch (error: any) {
       console.error("Error verifying OTP:", error);
-      toast.error(error.message || "Failed to verify OTP");
+      toast.error(error.message || "Failed to verify OTP. Please try again.");
       // Clear OTP inputs on error
       setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
-    } finally {
       setVerifying(false);
     }
   };

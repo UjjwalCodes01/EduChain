@@ -81,7 +81,8 @@ export default function MyApplicationsPage() {
             }
 
             const data = await response.json();
-            setApplications(data.applications || []);
+            console.log("Fetched applications:", data); // Debug log
+            setApplications(data.data || []); // Backend returns data.data
         } catch (error) {
             console.error("Error fetching applications:", error);
             toast.error("Failed to load applications");
