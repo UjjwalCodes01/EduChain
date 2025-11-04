@@ -3,8 +3,8 @@ const sgMail = require('@sendgrid/mail');
 // Initialize SendGrid
 const initEmailTransporter = () => {
   try {
-    if (!process.env.SENDGRID_API_KEY) {
-      console.warn('⚠️  SENDGRID_API_KEY not configured. Email functionality will be disabled.');
+    if (!process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY === '<paste-your-api-key-here>') {
+      console.warn('⚠️  SENDGRID_API_KEY not configured or using placeholder. Email functionality will be disabled.');
       return null;
     }
 

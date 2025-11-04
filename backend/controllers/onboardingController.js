@@ -37,13 +37,13 @@ exports.registerStudent = async (req, res) => {
             });
         }
 
-        // Upload document to IPFS if provided
+        // Upload document to IPFS if provided (only for actual files)
         let documentCID = null;
         if (req.file) {
             try {
                 documentCID = await uploadToIPFS(req.file.buffer);
             } catch (error) {
-                console.error('IPFS upload error:', error);
+                console.error('IPFS document upload error:', error);
                 // Continue without document if IPFS fails
             }
         }
@@ -140,7 +140,7 @@ exports.registerProvider = async (req, res) => {
             try {
                 documentCID = await uploadToIPFS(req.file.buffer);
             } catch (error) {
-                console.error('IPFS upload error:', error);
+                console.error('IPFS document upload error:', error);
                 // Continue without document if IPFS fails
             }
         }

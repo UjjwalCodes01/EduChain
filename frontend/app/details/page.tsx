@@ -116,6 +116,8 @@ export default function DetailsPage() {
                         );
                         const data = await response.json();
 
+                        console.log('Wallet check result:', data);
+
                         if (data.registered && data.user) {
                             // Wallet already registered - set localStorage and redirect to Home
                             localStorage.setItem(
@@ -125,12 +127,14 @@ export default function DetailsPage() {
                             localStorage.setItem("userRole", data.user.role);
                             localStorage.setItem("userEmail", data.user.email);
 
-                            // Silent redirect - no error message
-                            // Keep loading state active until redirect completes
-                            router.push("/Home");
+                            console.log('Redirecting registered user to Home...');
+                            
+                            // Redirect immediately
+                            router.replace("/Home");
                             return;
                         } else {
                             // Wallet not registered - stop loading and show registration form
+                            console.log('Wallet not registered, showing registration form');
                             setCheckingWallet(false);
                         }
                     } catch (error) {
@@ -195,8 +199,9 @@ export default function DetailsPage() {
                     });
                     
                     isRedirecting = true;
+                    // Use replace instead of push to prevent back navigation to details page
                     setTimeout(() => {
-                        router.push("/Home");
+                        router.replace("/Home");
                     }, 1000);
                     // Keep loading state until redirect completes
                     return;
