@@ -18,7 +18,7 @@ export default function CreatePoolPage() {
   const router = useRouter();
 
   // PoolFactory contract address (UPDATE THIS after deployment)
-  const POOL_FACTORY_ADDRESS = "0x0000000000000000000000000000000000000000"; // TODO: Update with deployed address
+  const POOL_FACTORY_ADDRESS = process.env.NEXT_PUBLIC_POOL_FACTORY_ADDRESS || "0x5D2B277be75CAB114189dE5298F2bC875Fa2a14a";
   
   const POOL_FACTORY_ABI = [
     "function createPool(string memory _poolName, string memory _poolDescription, uint256 _scholarshipAmount, uint256 _applicationDeadline) external returns (address poolAddress)",
@@ -77,12 +77,6 @@ export default function CreatePoolPage() {
     const deadlineDate = new Date(formData.applicationDeadline);
     if (deadlineDate <= new Date()) {
       toast.error("Application deadline must be in the future");
-      return;
-    }
-
-    // Check if PoolFactory is deployed
-    if (POOL_FACTORY_ADDRESS === "0x0000000000000000000000000000000000000000") {
-      toast.error("PoolFactory contract not deployed yet. Please deploy the contract first.");
       return;
     }
 

@@ -44,7 +44,7 @@ export default function MyPoolsPage() {
     const router = useRouter();
 
     // PoolFactory contract address (UPDATE THIS after deployment)
-    const POOL_FACTORY_ADDRESS = "0x0000000000000000000000000000000000000000"; // TODO: Update with deployed address
+    const POOL_FACTORY_ADDRESS = process.env.NEXT_PUBLIC_POOL_FACTORY_ADDRESS || "0x5D2B277be75CAB114189dE5298F2bC875Fa2a14a";
 
     const POOL_FACTORY_ABI = [
         "function poolsByCreator(address creator, uint256 index) external view returns (address)",
@@ -111,18 +111,6 @@ export default function MyPoolsPage() {
     const fetchPools = async () => {
         try {
             setLoading(true);
-
-            // Check if PoolFactory is deployed
-            if (
-                POOL_FACTORY_ADDRESS ===
-                "0x0000000000000000000000000000000000000000"
-            ) {
-                toast.error(
-                    "PoolFactory contract not deployed. Please deploy contracts first."
-                );
-                setLoading(false);
-                return;
-            }
 
             if (!window.ethereum) {
                 throw new Error("MetaMask is not installed");
