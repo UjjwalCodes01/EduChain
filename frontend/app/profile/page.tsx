@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface UserProfile {
   wallet: string;
@@ -68,7 +69,7 @@ export default function ProfilePage() {
       setLoading(true);
       
       // Fetch profile from API
-      const response = await fetch(`http://localhost:5000/api/user/profile/${wallet}`);
+      const response = await fetch(API_ENDPOINTS.GET_USER_PROFILE(wallet));
       
       if (response.ok) {
         const data = await response.json();
@@ -85,7 +86,7 @@ export default function ProfilePage() {
       }
       
       // Fetch notification preferences
-      const prefsResponse = await fetch(`http://localhost:5000/api/user/preferences/${wallet}`);
+      const prefsResponse = await fetch(API_ENDPOINTS.GET_USER_PREFERENCES(wallet));
       if (prefsResponse.ok) {
         const prefsData = await prefsResponse.json();
         setEmailNotifications(prefsData.preferences.emailNotifications);
@@ -106,7 +107,7 @@ export default function ProfilePage() {
       const loadingToast = toast.loading("Saving changes...");
       
       // Call API to update profile
-      const response = await fetch(`http://localhost:5000/api/user/profile/${walletAddress}`, {
+      const response = await fetch(API_ENDPOINTS.UPDATE_USER_PROFILE(walletAddress), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -151,7 +152,7 @@ export default function ProfilePage() {
     try {
       const loadingToast = toast.loading("Saving preferences...");
       
-      const response = await fetch(`http://localhost:5000/api/user/preferences/${walletAddress}`, {
+      const response = await fetch(API_ENDPOINTS.UPDATE_USER_PREFERENCES(walletAddress), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

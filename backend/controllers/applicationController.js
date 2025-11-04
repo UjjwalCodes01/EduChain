@@ -300,12 +300,27 @@ exports.getWalletApplications = async (req, res) => {
  */
 exports.resendVerification = async (req, res) => {
   try {
-    const { walletAddress, poolAddress } = req.body;
+    const { walletAddress, poolAddress, email } = req.body;
 
-    const application = await Application.findOne({
-      walletAddress: walletAddress.toLowerCase(),
-      poolAddress: poolAddress.toLowerCase()
-    });
+    let application;
+
+    // Support both lookup methods: by wallet+pool or by email
+    if (email) {
+      application = await Application.findOne({
+        email: email.toLowerCase(),
+        emailVerified: false
+      }).sort({ createdAt: -1 }); // Get the most recent unverified application
+    } else if (walletAddress && poolAddress) {
+      application = await Application.findOne({
+        walletAddress: walletAddress.toLowerCase(),
+        poolAddress: poolAddress.toLowerCase()
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Either email or walletAddress and poolAddress are required'
+      });
+    }
 
     if (!application) {
       return res.status(404).json({

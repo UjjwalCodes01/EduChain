@@ -93,6 +93,12 @@ export default function MyApplicationsPage() {
 
     const resendVerification = async (email: string) => {
         try {
+            // Validate email before sending
+            if (!email || typeof email !== 'string') {
+                toast.error("Invalid email address");
+                return;
+            }
+
             const loadingToast = toast.loading(
                 "Resending verification email..."
             );
@@ -100,19 +106,20 @@ export default function MyApplicationsPage() {
             const response = await fetch(API_ENDPOINTS.RESEND_VERIFICATION, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ email: email.toLowerCase() }),
             });
 
             if (!response.ok) {
-                throw new Error("Failed to resend verification email");
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to resend verification email");
             }
 
             toast.success("Verification email sent! Check your inbox.", {
                 id: loadingToast,
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error resending verification:", error);
-            toast.error("Failed to resend verification email");
+            toast.error(error.message || "Failed to resend verification email");
         }
     };
 

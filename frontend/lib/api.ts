@@ -34,4 +34,10 @@ export const API_ENDPOINTS = {
   // OTP endpoints
   SEND_OTP: `${API_URL}/api/otp/send`,
   VERIFY_OTP: `${API_URL}/api/otp/verify`,
+  
+  // User profile endpoints
+  GET_USER_PROFILE: (walletAddress: string) => `${API_URL}/api/user/profile/${walletAddress}`,
+  UPDATE_USER_PROFILE: (walletAddress: string) => `${API_URL}/api/user/profile/${walletAddress}`,
+  GET_USER_PREFERENCES: (walletAddress: string) => `${API_URL}/api/user/preferences/${walletAddress}`,
+  UPDATE_USER_PREFERENCES: (walletAddress: string) => `${API_URL}/api/user/preferences/${walletAddress}`,
 };
