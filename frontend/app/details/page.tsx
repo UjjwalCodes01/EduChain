@@ -298,19 +298,23 @@ export default function DetailsPage() {
                 );
             }
 
+            const responseData = await res.json();
+            console.log('Student registration response:', responseData);
+
             // Store user role in localStorage
             localStorage.setItem("userRole", "student");
             localStorage.setItem("userWallet", walletAddress);
             localStorage.setItem("userEmail", studentForm.email);
 
-            // Show registration success screen
-            setRegisteredEmail(studentForm.email);
-            setRegistrationComplete(true);
-
             toast.success(
-                "Registration submitted! Check your email for verification.",
+                "Registration successful! Redirecting to Home...",
                 { id: loadingToast }
             );
+
+            // Redirect to Home after a short delay
+            setTimeout(() => {
+                router.push("/Home");
+            }, 2000);
         } catch (e: any) {
             console.error(e);
             toast.error(e.message || "Submission failed. Please try again.");
@@ -373,19 +377,23 @@ export default function DetailsPage() {
                 );
             }
 
+            const responseData = await res.json();
+            console.log('Provider registration response:', responseData);
+
             // Store user role in localStorage
             localStorage.setItem("userRole", "provider");
             localStorage.setItem("userWallet", walletAddress);
             localStorage.setItem("userEmail", providerForm.email);
 
-            // Show registration success screen
-            setRegisteredEmail(providerForm.email);
-            setRegistrationComplete(true);
-
             toast.success(
-                "Provider registration submitted! Check your email for verification.",
+                "Provider registration successful! Redirecting to Home...",
                 { id: loadingToast }
             );
+
+            // Redirect to Home after a short delay
+            setTimeout(() => {
+                router.push("/Home");
+            }, 2000);
         } catch (e: any) {
             console.error(e);
             toast.error(e.message || "Submission failed. Please try again.");
@@ -403,16 +411,8 @@ export default function DetailsPage() {
         // Continue with registration based on pending role
         if (pendingRole === "student") {
             await submitStudent();
-            // Navigate to Home after successful registration
-            setTimeout(() => {
-                router.push("/Home");
-            }, 2000);
         } else if (pendingRole === "provider") {
             await submitProvider();
-            // Navigate to Home after successful registration
-            setTimeout(() => {
-                router.push("/Home");
-            }, 2000);
         }
     };
 
