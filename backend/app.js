@@ -100,8 +100,11 @@ app.use((err, req, res, next) => {
 // Database connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/educhain');
+    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/educhain';
+    console.log('🔌 Connecting to MongoDB:', mongoUri.replace(/:[^:]+@/, ':***@')); // Hide password in logs
+    await mongoose.connect(mongoUri);
     console.log('✅ MongoDB connected successfully');
+    console.log('📊 Database name:', mongoose.connection.db.databaseName);
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
     process.exit(1);
