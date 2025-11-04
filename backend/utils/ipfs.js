@@ -5,26 +5,48 @@ let ipfs;
 
 const initIPFS = () => {
   try {
-    if (!process.env.IPFS_PROJECT_ID || !process.env.IPFS_PROJECT_SECRET) {
+    const rawProjectId = process.env.IPFS_PROJECT_ID;
+    const rawProjectSecret = process.env.IPFS_PROJECT_SECRET;
+    const endpoint = (process.env.IPFS_ENDPOINT || 'https://ipfs.infura.io:5001').trim();
+
+    if (!rawProjectId || !rawProjectSecret) {
       console.warn('⚠️  IPFS credentials not configured. IPFS functionality will be limited.');
       return null;
     }
 
-    const auth = 'Basic ' + Buffer.from(
-      process.env.IPFS_PROJECT_ID + ':' + process.env.IPFS_PROJECT_SECRET
-    ).toString('base64');
+    const projectId = rawProjectId.trim();
+    const projectSecret = rawProjectSecret.trim();
 
+    // Log masked project id so you can verify the correct env var is read
+    console.log(`🔐 IPFS project id detected: ${projectId.substring(0,6)}...${projectId.slice(-4)}`);
+
+    const auth = 'Basic ' + Buffer.from(`${projectId}:${projectSecret}`).toString('base64');
+
+    // Use `url` option (recommended) instead of host/port/protocol
     ipfs = create({
-      host: process.env.IPFS_HOST || 'ipfs.infura.io',
-      port: process.env.IPFS_PORT || 5001,
-      protocol: process.env.IPFS_PROTOCOL || 'https',
+      url: endpoint,
       headers: { authorization: auth }
     });
 
-    console.log('✅ IPFS client initialized');
+    // Quick validation of client (async check)
+    ipfs._readyCheck = (async () => {
+      try {
+        // Minimal call to validate credentials and reachability
+        const id = await ipfs.id();
+        console.log('✅ IPFS client initialized (node id):', id.id ? id.id.substring(0,8) + '...' : id);
+        return true;
+      } catch (err) {
+        console.error('❌ IPFS client validation failed:', err && err.message ? err.message : err);
+        // Destroy client so subsequent calls re-init or fail
+        ipfs = null;
+        return false;
+      }
+    })();
+
     return ipfs;
   } catch (error) {
     console.error('❌ Failed to initialize IPFS client:', error);
+    ipfs = null;
     return null;
   }
 };
@@ -41,8 +63,18 @@ const uploadToIPFS = async (fileBuffer, filename = 'document') => {
       ipfs = initIPFS();
     }
 
+    if (ipfs && ipfs._readyCheck) {
+      await ipfs._readyCheck;
+    }
+
     if (!ipfs) {
-      console.warn('⚠️  IPFS client not available. Returning mock CID.');
+      const msg = 'IPFS client not available';
+      console.warn('⚠️  ' + msg + '.');
+
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(msg);
+      }
+
       // Return a mock CID for development
       return 'Qm' + Buffer.from(Date.now().toString()).toString('base64').substring(0, 44);
     }
@@ -53,13 +85,13 @@ const uploadToIPFS = async (fileBuffer, filename = 'document') => {
     };
 
     const result = await ipfs.add(file);
-    const cid = result.cid.toString();
+    const cid = (result && (result.cid?.toString() || result.path || result.cid)) || null;
     
     console.log(`✅ File uploaded to IPFS: ${cid}`);
     return cid;
   } catch (error) {
     console.error('❌ Error uploading to IPFS:', error);
-    // Return mock CID on error for development
+    if (process.env.NODE_ENV === 'production') throw error;
     console.warn('⚠️  Returning mock CID due to upload error.');
     return 'Qm' + Buffer.from(Date.now().toString()).toString('base64').substring(0, 44);
   }
@@ -76,9 +108,16 @@ const uploadJSONToIPFS = async (data) => {
       ipfs = initIPFS();
     }
 
+    if (ipfs && ipfs._readyCheck) {
+      await ipfs._readyCheck;
+    }
+
     if (!ipfs) {
-      console.warn('⚠️  IPFS client not available. Returning mock CID for JSON.');
-      // Return a mock CID for development
+      const msg = 'IPFS client not available for JSON upload';
+      console.warn('⚠️  ' + msg + '.');
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(msg);
+      }
       return 'Qm' + Buffer.from(JSON.stringify(data).substring(0, 20) + Date.now()).toString('base64').substring(0, 44);
     }
 
@@ -86,14 +125,14 @@ const uploadJSONToIPFS = async (data) => {
     const buffer = Buffer.from(jsonString);
 
     const result = await ipfs.add(buffer);
-    const cid = result.cid.toString();
+    const cid = (result && (result.cid?.toString() || result.path || result.cid)) || null;
     
     console.log(`✅ JSON uploaded to IPFS: ${cid}`);
     return cid;
   } catch (error) {
     console.error('❌ Error uploading JSON to IPFS:', error);
+    if (process.env.NODE_ENV === 'production') throw error;
     console.warn('⚠️  Returning mock CID due to JSON upload error.');
-    // Return mock CID on error instead of throwing
     return 'Qm' + Buffer.from(JSON.stringify(data).substring(0, 20) + Date.now()).toString('base64').substring(0, 44);
   }
 };
