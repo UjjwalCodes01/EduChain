@@ -576,10 +576,10 @@ export default function DetailsPage() {
 
             {/* Wallet Checking Loader */}
             {checkingWallet && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-800 backdrop-blur-sm">
                     <div className="text-center">
-                        <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                        <h3 className="text-xl font-semibold text-white mb-2">
+                        <div className="w-16 h-16 border-4 border-gray-700 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <h3 className="text-xl font-semibold text-gray-200 mb-2">
                             Checking Wallet Registration
                         </h3>
                         <p className="text-gray-400 text-sm">

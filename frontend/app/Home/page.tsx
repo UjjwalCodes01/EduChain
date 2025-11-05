@@ -781,8 +781,8 @@ const HomePage = () => {
 
                             {/* Pools List */}
                             {loading ? (
-                                <div className="flex justify-center items-center h-64">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+                                <div className="flex justify-center items-center h-64 bg-gradient-to-br from-gray-900 via-black to-gray-800">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-700"></div>
                                 </div>
                             ) : filteredPools.length === 0 ? (
                                 <div className="text-center py-12">
