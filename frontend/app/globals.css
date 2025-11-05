@@ -123,6 +123,37 @@
   }
 }
 
+/* Performance optimizations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* GPU acceleration for animations */
+.animate-spin,
+.animate-pulse,
+.animate-gradient {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Optimize scrolling */
+body {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @keyframes gradient {
   0% {
     background-position: 0% 50%;

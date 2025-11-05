@@ -1,10 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import Threads from "../components/Threads";
 import { Button } from "../components/ui/stateful-button";
 import GradientText from "../components/ui/GradientText";
 import { ethers } from "ethers";
+
+// Lazy load Threads component
+const Threads = lazy(() => import("../components/Threads"));
+
+// Loading component for Threads
+const ThreadsLoader = () => (
+    <div className="fixed inset-0 z-0 bg-black" />
+);
 
 export default function Home() {
     const [walletAddress, setWalletAddress] = useState<string>("");
@@ -64,11 +71,13 @@ export default function Home() {
         >
             {/* Background Animation - Behind everything */}
             <div className="fixed inset-0 z-0">
-                <Threads
-                    amplitude={1.5}
-                    distance={0}
-                    enableMouseInteraction={false}
-                />
+                <Suspense fallback={<ThreadsLoader />}>
+                    <Threads
+                        amplitude={1.5}
+                        distance={0}
+                        enableMouseInteraction={false}
+                    />
+                </Suspense>
             </div>
 
             {/* All Content on top of Threads */}

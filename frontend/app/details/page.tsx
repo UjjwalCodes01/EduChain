@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
 import toast, { Toaster } from "react-hot-toast";
-import Threads from "../../components/Threads";
 import { Button } from "../../components/ui/stateful-button";
-import OTPModal from "../../components/OTPModal";
 import Button2 from "../../components/ui/Button2";
 import { API_ENDPOINTS, API_URL } from "@/lib/api";
+
+// Lazy load heavy components
+const Threads = lazy(() => import("../../components/Threads"));
+const OTPModal = lazy(() => import("../../components/OTPModal"));
+
+// Loading fallbacks
+const ThreadsLoader = () => <div className="fixed inset-0 z-0 bg-black" />;
 
 type Step = "role" | "student" | "provider";
 type UserRole = "student" | "provider" | null;
@@ -560,11 +565,13 @@ export default function DetailsPage() {
 
             {/* Background */}
             <div className="fixed inset-0 z-0">
-                <Threads
-                    amplitude={1.5}
-                    distance={0}
-                    enableMouseInteraction={false}
-                />
+                <Suspense fallback={<ThreadsLoader />}>
+                    <Threads
+                        amplitude={1.5}
+                        distance={0}
+                        enableMouseInteraction={false}
+                    />
+                </Suspense>
             </div>
 
             {/* Wallet Checking Loader */}
@@ -1015,16 +1022,18 @@ export default function DetailsPage() {
 
             {/* OTP Modal */}
             {showOTPModal && (
-                <OTPModal
-                    email={pendingEmail}
-                    walletAddress={walletAddress}
-                    onVerified={handleOTPVerified}
-                    onCancel={() => {
-                        setShowOTPModal(false);
-                        setPendingEmail("");
-                        setPendingRole(null);
-                    }}
-                />
+                <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+                    <OTPModal
+                        email={pendingEmail}
+                        walletAddress={walletAddress}
+                        onVerified={handleOTPVerified}
+                        onCancel={() => {
+                            setShowOTPModal(false);
+                            setPendingEmail("");
+                            setPendingRole(null);
+                        }}
+                    />
+                </Suspense>
             )}
         </div>
     );

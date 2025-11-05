@@ -1,15 +1,20 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
 import toast, { Toaster } from "react-hot-toast";
-import Threads from "../../components/Threads";
 import "../Style.css";
 import { Button } from "../../components/ui/stateful-button";
 import Button2 from "../../components/ui/Button2";
-import ApplicationModal from "../../components/ApplicationModal";
 import { POOL_FACTORY_ADDRESS, FACTORY_ABI, POOL_ABI } from "@/lib/contracts";
 import { API_ENDPOINTS } from "@/lib/api";
+
+// Lazy load heavy components
+const Threads = lazy(() => import("../../components/Threads"));
+const ApplicationModal = lazy(() => import("../../components/ApplicationModal"));
+
+// Loading fallback for Threads
+const ThreadsLoader = () => <div className="fixed inset-0 z-0 bg-black" />;
 
 // Pool interface
 interface Pool {
@@ -372,11 +377,13 @@ const HomePage = () => {
 
             {/* Background Animation */}
             <div className="fixed inset-0 z-0">
-                <Threads
-                    amplitude={1.5}
-                    distance={0}
-                    enableMouseInteraction={false}
-                />
+                <Suspense fallback={<ThreadsLoader />}>
+                    <Threads
+                        amplitude={1.5}
+                        distance={0}
+                        enableMouseInteraction={false}
+                    />
+                </Suspense>
             </div>
 
             {/* Content */}
@@ -951,14 +958,16 @@ const HomePage = () => {
 
             {/* Application Modal */}
             {showApplicationModal && selectedPool && (
-                <ApplicationModal
-                    pool={selectedPool}
-                    walletAddress={walletAddress}
-                    onClose={() => {
-                        setShowApplicationModal(false);
-                        setSelectedPool(null);
-                    }}
-                />
+                <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+                    <ApplicationModal
+                        pool={selectedPool}
+                        walletAddress={walletAddress}
+                        onClose={() => {
+                            setShowApplicationModal(false);
+                            setSelectedPool(null);
+                        }}
+                    />
+                </Suspense>
             )}
         </div>
     );
