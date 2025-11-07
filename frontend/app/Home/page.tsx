@@ -264,12 +264,54 @@ const HomePage = () => {
             }
 
             const provider = new ethers.BrowserProvider(window.ethereum);
+            
+            // Check if connected to the right network (Sepolia)
+            const network = await provider.getNetwork();
+            const chainId = Number(network.chainId);
+            
+            // Sepolia chainId is 11155111
+            if (chainId !== 11155111) {
+                toast.error("Please switch to Sepolia testnet in MetaMask", {
+                    duration: 5000,
+                });
+                setLoading(false);
+                return;
+            }
+
             const factory = new ethers.Contract(
                 POOL_FACTORY_ADDRESS,
                 FACTORY_ABI,
                 provider
             );
-            const poolAddresses = await factory.getAllPools();
+            
+            let poolAddresses;
+            try {
+                poolAddresses = await factory.getAllPools();
+            } catch (error: any) {
+                // If getAllPools fails, it might mean no pools exist yet
+                if (error.message.includes("could not decode result data")) {
+                    console.log("No pools created yet or contract not deployed");
+                    setPools([]);
+                    setFilteredPools([]);
+                    setLoading(false);
+                    toast("No scholarship pools available yet. Providers can create pools!", {
+                        icon: "ℹ️",
+                        duration: 4000,
+                    });
+                    return;
+                }
+                throw error;
+            }
+
+            if (!poolAddresses || poolAddresses.length === 0) {
+                setPools([]);
+                setFilteredPools([]);
+                setLoading(false);
+                toast("No scholarship pools available yet", {
+                    icon: "ℹ️",
+                });
+                return;
+            }
 
             const poolsData: Pool[] = [];
 
@@ -791,10 +833,40 @@ const HomePage = () => {
                                 <div className="flex justify-center items-center h-64 bg-gradient-to-br from-gray-900 via-black to-gray-800">
                                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-700"></div>
                                 </div>
+                            ) : pools.length === 0 ? (
+                                <div className="text-center py-16 px-4">
+                                    <div className="max-w-md mx-auto">
+                                        <div className="text-6xl mb-4">📚</div>
+                                        <h3 className="text-2xl font-bold text-white mb-3">
+                                            No Scholarship Pools Yet
+                                        </h3>
+                                        <p className="text-gray-400 mb-6">
+                                            {userRole === "provider" 
+                                                ? "Be the first to create a scholarship pool and help students achieve their dreams!"
+                                                : "No scholarship pools are available at the moment. Check back soon!"}
+                                        </p>
+                                        {userRole === "provider" && (
+                                            <Button 
+                                                onClick={() => router.push("/create-pool")}
+                                                disabled={false}
+                                            >
+                                                Create First Pool
+                                            </Button>
+                                        )}
+                                        <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                                            <p className="text-sm text-blue-300">
+                                                💡 Make sure you're connected to <strong>Sepolia testnet</strong> in MetaMask
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             ) : filteredPools.length === 0 ? (
                                 <div className="text-center py-12">
-                                    <p className="text-gray-400 text-lg">
+                                    <p className="text-gray-400 text-lg mb-2">
                                         No pools found matching your criteria.
+                                    </p>
+                                    <p className="text-gray-500 text-sm">
+                                        Try adjusting your filters or search
                                     </p>
                                 </div>
                             ) : (
