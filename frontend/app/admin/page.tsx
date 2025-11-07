@@ -389,7 +389,7 @@ export default function AdminDashboard() {
       const poolContract = new ethers.Contract(application.poolAddress, POOL_ABI, signer);
       
       // Call payScholarship on the contract
-      const tx = await poolContract.payScholarship(application.applicantWallet);
+      const tx = await poolContract.payScholarship(application.walletAddress);
       
       toast.loading("Waiting for transaction confirmation...", { id: loadingToast });
       await tx.wait();
@@ -417,7 +417,7 @@ export default function AdminDashboard() {
     
     // Filter to only approved, unpaid applications
     const applicationsToP = filteredApplications.filter(
-      app => selectedApplications.has(app._id) && app.adminApproved && !app.paid
+      app => selectedApplications.has(app._id) && app.status === 'approved'
     );
     
     if (applicationsToP.length === 0) {
@@ -641,19 +641,19 @@ export default function AdminDashboard() {
             <div className="text-gray-400 text-sm mb-2">Pending Review</div>
             <div className="text-3xl font-bold text-purple-400">
               {statistics?.pendingApplications ?? 
-                applications.filter(app => app.emailVerified && !app.adminApproved && !app.rejectionReason).length}
+                applications.filter(app => app.emailVerified && app.status === 'verified').length}
             </div>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-xl p-6">
             <div className="text-gray-400 text-sm mb-2">Approved</div>
             <div className="text-3xl font-bold text-green-400">
-              {statistics?.approvedApplications ?? applications.filter(app => app.adminApproved).length}
+              {statistics?.approvedApplications ?? applications.filter(app => app.status === 'approved').length}
             </div>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-xl p-6">
             <div className="text-gray-400 text-sm mb-2">Scholarships Paid</div>
             <div className="text-3xl font-bold text-blue-400">
-              {applications.filter(app => app.paid).length}
+              {applications.filter(app => app.status === 'paid').length}
             </div>
           </div>
         </div>
@@ -780,7 +780,7 @@ export default function AdminDashboard() {
         ) : (
           <div className="space-y-4">
             {filteredApplications.map((application) => {
-              const canBeSelected = application.emailVerified && !application.adminApproved && !application.rejectionReason;
+              const canBeSelected = application.emailVerified && application.status === 'verified';
               const isSelected = selectedApplications.has(application._id);
               
               return (
@@ -847,7 +847,7 @@ export default function AdminDashboard() {
                         </button>
                       </>
                     )}
-                    {application.status === 'approved' && application.status !== 'paid' && (
+                    {application.status === 'approved' && (
                       <>
                         <button
                           onClick={() => payScholarship(application)}
@@ -863,9 +863,9 @@ export default function AdminDashboard() {
                         </button>
                       </>
                     )}
-                    {application.documents && (
+                    {application.ipfsHash && (
                       <a
-                        href={application.documents}
+                        href={`https://ipfs.io/ipfs/${application.ipfsHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm text-center"
