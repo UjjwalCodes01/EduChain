@@ -280,7 +280,7 @@ const HomePage = () => {
                     provider
                 );
 
-                // Fetch pool data (updated for new ABI)
+                // Fetch pool data
                 const [
                     name,
                     amount,
@@ -288,7 +288,7 @@ const HomePage = () => {
                     totalFunds,
                     availableFunds,
                     awarded,
-                    admin,
+                    applicantCount,
                 ] = await Promise.all([
                     poolContract.poolName(),
                     poolContract.scholarshipAmount(),
@@ -296,13 +296,20 @@ const HomePage = () => {
                     poolContract.totalFunds(),
                     poolContract.availableFunds(),
                     poolContract.totalScholarshipsAwarded(),
-                    poolContract.hasRole(
-                        await poolContract.ADMIN_ROLE(),
-                        walletAddress
-                    ), // <-- fetch admin address
+                    poolContract.getApplicantCount(),
                 ]);
 
-                const applicantCount = await poolContract.getApplicantCount();
+                // Get admin address (pool creator)
+                let adminAddress = "Unknown";
+                try {
+                    const ADMIN_ROLE = await poolContract.ADMIN_ROLE();
+                    const roleAdminCount = await poolContract.getRoleMemberCount(ADMIN_ROLE);
+                    if (roleAdminCount > 0) {
+                        adminAddress = await poolContract.getRoleMember(ADMIN_ROLE, 0);
+                    }
+                } catch (error) {
+                    console.log("Could not fetch admin for pool:", poolAddress);
+                }
 
                 poolsData.push({
                     address: poolAddress,
@@ -313,7 +320,7 @@ const HomePage = () => {
                     availableFunds: ethers.formatEther(availableFunds),
                     totalScholarshipsAwarded: Number(awarded),
                     applicantCount: Number(applicantCount),
-                    admin: admin, // <-- add admin property
+                    admin: adminAddress,
                 });
             }
 
