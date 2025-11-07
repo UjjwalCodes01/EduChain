@@ -543,7 +543,7 @@ const HomePage = () => {
                 <main className="container mx-auto px-8 py-12">
                     {!walletAddress ? (
                         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-                            <div className="max-w-md space-y-4">
+                            <div className="max-w-md flex flex-col items-center justify-center space-y-4">
                                 <h2 className="text-4xl font-bold text-white">
                                     Welcome to EduChain
                                 </h2>
