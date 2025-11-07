@@ -8,22 +8,27 @@ import { API_ENDPOINTS } from "@/lib/api";
 
 interface Application {
   _id: string;
-  applicantWallet: string;
+  walletAddress: string;
   poolAddress: string;
-  name: string;
   email: string;
-  studentId: string;
-  institution: string;
-  program: string;
-  year: string;
-  gpa: string;
-  statement: string;
-  documents?: string;
+  poolId: string;
+  ipfsHash?: string;
+  applicationData: {
+    name?: string;
+    studentId?: string;
+    institution?: string;
+    program?: string;
+    year?: string;
+    gpa?: string;
+    additionalInfo?: string;
+  };
   emailVerified: boolean;
-  adminApproved: boolean;
-  rejectionReason?: string;
-  blockchainVerified: boolean;
-  paid: boolean;
+  verifiedAt?: string;
+  status: 'pending' | 'verified' | 'approved' | 'rejected' | 'paid';
+  reviewedBy?: string;
+  reviewedAt?: string;
+  adminNotes?: string;
+  submittedAt: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -100,19 +105,19 @@ export default function AdminDashboard() {
     if (statusFilter !== "all") {
       switch (statusFilter) {
         case "pending":
-          filtered = filtered.filter(app => app.emailVerified && !app.adminApproved && !app.rejectionReason);
+          filtered = filtered.filter(app => app.status === 'pending' || app.status === 'verified');
           break;
         case "approved":
-          filtered = filtered.filter(app => app.adminApproved);
+          filtered = filtered.filter(app => app.status === 'approved');
           break;
         case "rejected":
-          filtered = filtered.filter(app => app.rejectionReason);
+          filtered = filtered.filter(app => app.status === 'rejected');
           break;
         case "unverified":
           filtered = filtered.filter(app => !app.emailVerified);
           break;
         case "paid":
-          filtered = filtered.filter(app => app.paid);
+          filtered = filtered.filter(app => app.status === 'paid');
           break;
       }
     }
@@ -181,10 +186,13 @@ export default function AdminDashboard() {
         
         if (response.ok) {
           const data = await response.json();
-          allApplications.push(...data.applications);
+          // Backend returns { success, count, data: [...applications] }
+          const apps = data.data || data.applications || [];
+          allApplications.push(...apps);
         }
       }
       
+      console.log('Fetched applications:', allApplications.length);
       setApplications(allApplications);
       setFilteredApplications(allApplications);
       
@@ -442,7 +450,7 @@ export default function AdminDashboard() {
         
         try {
           const poolContract = new ethers.Contract(poolAddress, POOL_ABI, signer);
-          const recipients = apps.map(app => app.applicantWallet);
+          const recipients = apps.map(app => app.walletAddress);
           
           // Call batchPayScholarships
           const tx = await poolContract.batchPayScholarships(recipients);
@@ -544,13 +552,13 @@ export default function AdminDashboard() {
   };
 
   const getStatusBadge = (application: Application) => {
-    if (application.paid) {
+    if (application.status === 'paid') {
       return <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Paid</span>;
     }
-    if (application.rejectionReason) {
+    if (application.status === 'rejected') {
       return <span className="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-medium">Rejected</span>;
     }
-    if (application.adminApproved) {
+    if (application.status === 'approved') {
       return <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium">Approved</span>;
     }
     if (!application.emailVerified) {
@@ -795,21 +803,21 @@ export default function AdminDashboard() {
                   
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-white">{application.name}</h3>
+                      <h3 className="text-lg font-semibold text-white">{application.applicationData?.name || 'N/A'}</h3>
                       {getStatusBadge(application)}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-400">
                       <div>📧 {application.email}</div>
-                      <div>🎓 {application.institution}</div>
-                      <div>📚 {application.program}</div>
-                      <div>📊 GPA: {application.gpa}</div>
-                      <div>🆔 {application.studentId}</div>
+                      <div>🎓 {application.applicationData?.institution || 'N/A'}</div>
+                      <div>📚 {application.applicationData?.program || 'N/A'}</div>
+                      <div>📊 GPA: {application.applicationData?.gpa || 'N/A'}</div>
+                      <div>🆔 {application.applicationData?.studentId || 'N/A'}</div>
                       <div>📅 Applied: {formatDate(application.createdAt)}</div>
                     </div>
-                    {application.rejectionReason && (
+                    {application.status === 'rejected' && application.adminNotes && (
                       <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                         <div className="text-xs text-red-400 font-semibold mb-1">Rejection Reason:</div>
-                        <div className="text-sm text-red-300">{application.rejectionReason}</div>
+                        <div className="text-sm text-red-300">{application.adminNotes}</div>
                       </div>
                     )}
                   </div>
@@ -820,7 +828,7 @@ export default function AdminDashboard() {
                     >
                       View Details
                     </button>
-                    {application.emailVerified && !application.adminApproved && !application.rejectionReason && (
+                    {application.emailVerified && application.status !== 'approved' && application.status !== 'rejected' && (
                       <>
                         <button
                           onClick={() => approveApplication(application._id)}
@@ -839,7 +847,7 @@ export default function AdminDashboard() {
                         </button>
                       </>
                     )}
-                    {application.adminApproved && !application.paid && (
+                    {application.status === 'approved' && application.status !== 'paid' && (
                       <>
                         <button
                           onClick={() => payScholarship(application)}
@@ -890,7 +898,7 @@ export default function AdminDashboard() {
             <div className="p-6 space-y-4">
               <div>
                 <div className="text-sm text-gray-400 mb-1">Applicant Name</div>
-                <div className="text-lg text-white font-semibold">{selectedApplication.name}</div>
+                <div className="text-lg text-white font-semibold">{selectedApplication.applicationData?.name || 'N/A'}</div>
               </div>
               <div>
                 <div className="text-sm text-gray-400 mb-1">Email</div>
@@ -898,33 +906,33 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <div className="text-sm text-gray-400 mb-1">Wallet Address</div>
-                <div className="text-white font-mono text-sm break-all">{selectedApplication.applicantWallet}</div>
+                <div className="text-white font-mono text-sm break-all">{selectedApplication.walletAddress}</div>
               </div>
               <div>
                 <div className="text-sm text-gray-400 mb-1">Student ID</div>
-                <div className="text-white">{selectedApplication.studentId}</div>
+                <div className="text-white">{selectedApplication.applicationData?.studentId || 'N/A'}</div>
               </div>
               <div>
                 <div className="text-sm text-gray-400 mb-1">Institution</div>
-                <div className="text-white">{selectedApplication.institution}</div>
+                <div className="text-white">{selectedApplication.applicationData?.institution || 'N/A'}</div>
               </div>
               <div>
                 <div className="text-sm text-gray-400 mb-1">Program</div>
-                <div className="text-white">{selectedApplication.program}</div>
+                <div className="text-white">{selectedApplication.applicationData?.program || 'N/A'}</div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="text-sm text-gray-400 mb-1">Year</div>
-                  <div className="text-white">{selectedApplication.year}</div>
+                  <div className="text-white">{selectedApplication.applicationData?.year || 'N/A'}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-400 mb-1">GPA</div>
-                  <div className="text-white">{selectedApplication.gpa}</div>
+                  <div className="text-white">{selectedApplication.applicationData?.gpa || 'N/A'}</div>
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-400 mb-1">Personal Statement</div>
-                <div className="text-white bg-black/50 p-4 rounded-lg whitespace-pre-wrap">{selectedApplication.statement}</div>
+                <div className="text-sm text-gray-400 mb-1">Additional Info</div>
+                <div className="text-white bg-black/50 p-4 rounded-lg whitespace-pre-wrap">{selectedApplication.applicationData?.additionalInfo || 'No additional information provided'}</div>
               </div>
               <div>
                 <div className="text-sm text-gray-400 mb-1">Status</div>
@@ -938,14 +946,14 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-400 mb-1">Admin Approved</div>
-                  <div className={selectedApplication.adminApproved ? "text-green-400" : "text-gray-400"}>
-                    {selectedApplication.adminApproved ? "✓ Yes" : "Pending"}
+                  <div className="text-gray-400 mb-1">Status</div>
+                  <div className={selectedApplication.status === 'approved' ? "text-green-400" : "text-gray-400"}>
+                    {selectedApplication.status === 'approved' ? "✓ Approved" : selectedApplication.status === 'rejected' ? "✗ Rejected" : "Pending"}
                   </div>
                 </div>
               </div>
               <div className="pt-4 border-t border-white/10 flex gap-3">
-                {selectedApplication.emailVerified && !selectedApplication.adminApproved && !selectedApplication.rejectionReason && (
+                {selectedApplication.emailVerified && selectedApplication.status !== 'approved' && selectedApplication.status !== 'rejected' && (
                   <>
                     <button
                       onClick={() => approveApplication(selectedApplication._id)}
