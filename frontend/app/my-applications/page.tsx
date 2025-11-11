@@ -73,7 +73,7 @@ export default function MyApplicationsPage() {
         try {
             setLoading(true);
             const response = await fetch(
-                API_ENDPOINTS.GET_APPLICATIONS_BY_WALLET(walletAddress)
+                API_ENDPOINTS.GET_APPLICATIONS_BY_WALLET(walletAddress.toLowerCase())
             );
 
             if (!response.ok) {

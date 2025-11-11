@@ -46,7 +46,7 @@ export default function ApplicationModal({ pool, walletAddress, onClose }: Appli
     // Check for duplicate application first
     try {
       const checkResponse = await fetch(
-        API_ENDPOINTS.CHECK_APPLICATION_EXISTS(walletAddress, pool.address)
+        API_ENDPOINTS.CHECK_APPLICATION_EXISTS(walletAddress.toLowerCase(), pool.address.toLowerCase())
       );
       
       if (checkResponse.ok) {
@@ -80,11 +80,11 @@ export default function ApplicationModal({ pool, walletAddress, onClose }: Appli
       const loadingToast = toast.loading("Submitting application...");
 
       const formDataToSend = new FormData();
-      formDataToSend.append("walletAddress", walletAddress);
-      formDataToSend.append("poolAddress", pool.address);
-      formDataToSend.append("poolId", pool.address);
+      formDataToSend.append("walletAddress", walletAddress.toLowerCase());
+      formDataToSend.append("poolAddress", pool.address.toLowerCase());
+      formDataToSend.append("poolId", pool.address.toLowerCase());
       formDataToSend.append("name", formData.name);
-      formDataToSend.append("email", formData.email);
+      formDataToSend.append("email", formData.email.toLowerCase());
       formDataToSend.append("studentId", formData.studentId);
       formDataToSend.append("institution", formData.institution);
       formDataToSend.append("program", formData.program);
@@ -98,12 +98,14 @@ export default function ApplicationModal({ pool, walletAddress, onClose }: Appli
         body: formDataToSend,
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to submit application");
+        toast.dismiss(loadingToast);
+        toast.error(result.error || result.message || "Failed to submit application", { duration: 5000 });
+        return;
       }
 
-      const result = await response.json();
       toast.success("Application submitted! Check your email for verification.", { id: loadingToast });
       onClose();
       router.push("/my-applications");

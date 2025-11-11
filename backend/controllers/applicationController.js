@@ -147,6 +147,15 @@ exports.submitApplication = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error submitting application:', error);
+    
+    // Handle duplicate key error (MongoDB error code 11000)
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        error: 'You have already applied to this scholarship pool. You can only submit one application per pool.'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       error: 'Failed to submit application',

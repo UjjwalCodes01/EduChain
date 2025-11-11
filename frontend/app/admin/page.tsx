@@ -182,7 +182,7 @@ export default function AdminDashboard() {
       const allApplications: Application[] = [];
       
       for (const poolAddr of poolAddresses) {
-        const response = await fetch(API_ENDPOINTS.GET_APPLICATIONS_BY_POOL(poolAddr));
+        const response = await fetch(API_ENDPOINTS.GET_APPLICATIONS_BY_POOL(poolAddr.toLowerCase()));
         
         if (response.ok) {
           const data = await response.json();
